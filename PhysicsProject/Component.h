@@ -5,7 +5,7 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include "GameObject.h"
 #include <iostream>
-
+#include <functional>
 //All components are here because it feels easier to work with over having them all on separate files
 class GameObject; 
 
@@ -20,7 +20,7 @@ public:
 
     sf::Vector2f position;
     sf::Vector2f scale = sf::Vector2f(1.0f,1.0f);
-    float rotation;
+    float rotation = 0.0f;
 };
 
 class RenderComponent : public Component {
@@ -112,7 +112,7 @@ public:
     }
 
     bool intersects(const BoxColliderComponent& other) const {
-        std::cout << "collision with other object"  << std::endl;
+        
         return getBounds().intersects(other.getBounds());
     }
      
@@ -120,7 +120,7 @@ public:
         m_width = width;
         m_height = height;
     }
-
+    std::function<void(GameObject*)> onCollision;   
 private:
     TransformComponent* m_transform;
     float m_width;

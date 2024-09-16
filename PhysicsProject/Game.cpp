@@ -45,7 +45,7 @@ void Game::createScene(SceneType scene) {
         bird->addComponent<TransformComponent>(position.x, position.y);
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(1.0f,1.0f);
-        bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>(), 50,50);
+        bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>(), 1,1);
         return bird;
         };
 
