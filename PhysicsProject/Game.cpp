@@ -59,16 +59,16 @@ void Game::createScene(SceneType scene) {
     case SceneType::LEVEL_1:
     {
         auto player = createBird(sf::Vector2f(100, 100), spritePaths[0]);
-        player->getComponent<SpriteRendererComponent>()->setScale(0.5f, 0.5f);
+
 
         auto enemy = createBird(sf::Vector2f(700, 100), spritePaths[1]);
-        enemy->getComponent<SpriteRendererComponent>()->setScale(0.6f, 0.6f);
+
 
         auto platform = GameObject::create(sf::Vector2f(375, 500));
         platform->addComponent<RenderComponent>(sf::Color::Green);
 
         auto coin = createBird(sf::Vector2f(400, 300), spritePaths[2]);
-        coin->getComponent<SpriteRendererComponent>()->setScale(0.3f, 0.3f);
+
 
         m_bird = createBird(sf::Vector2f(200, 200), spritePaths[0]);
 
@@ -95,7 +95,7 @@ void Game::createScene(SceneType scene) {
     case SceneType::GAME_OVER:
     {
         auto gameOverObject = createBird(sf::Vector2f(375, 275), spritePaths[1]);
-        gameOverObject->getComponent<SpriteRendererComponent>()->setScale(1.5f, 1.5f);
+
     }
     break;
     }

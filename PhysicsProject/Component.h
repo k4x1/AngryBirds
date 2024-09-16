@@ -4,7 +4,10 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include "GameObject.h"
-class GameObject; // Forward declaration
+
+
+//All components are here because it feels easier to work with over having them all on separate files
+class GameObject; 
 
 class Component {
 public:
@@ -16,6 +19,8 @@ public:
     TransformComponent(float x, float y) : position(x, y) {}
 
     sf::Vector2f position;
+    sf::Vector2f scale = sf::Vector2f(1.0f,1.0f);
+    float rotation;
 };
 
 class RenderComponent : public Component {
@@ -79,3 +84,14 @@ private:
     sf::Texture m_texture;
     sf::Sprite m_sprite;
 };
+
+class BoxColliderComponent : public Component {
+public:
+    BoxColliderComponent(TransformComponent* transform) {
+        m_transform = transform;
+    }
+private:
+    TransformComponent* m_transform;
+
+};
+

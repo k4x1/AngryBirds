@@ -14,6 +14,8 @@ void RenderSystem::update(sf::RenderWindow& window) {
         auto spriteRenderer = gameObject->getComponent<SpriteRendererComponent>();
         if (transform && spriteRenderer) {
             spriteRenderer->getSprite().setPosition(transform->position);
+            spriteRenderer->setScale(transform->scale.x, transform->scale.y);
+            spriteRenderer->getSprite().setRotation(transform->rotation);
             window.draw(spriteRenderer->getSprite());
         }
     }
