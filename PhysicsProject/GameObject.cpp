@@ -4,8 +4,9 @@
 
 std::vector<GameObject*> GameObject::s_allObjects;
 
-GameObject* GameObject::create(const sf::Vector2f& position) {
+GameObject* GameObject::create(const sf::Vector2f& position, std::string name) {
     auto obj = new GameObject(position);
+    obj->m_name = name;
     s_allObjects.push_back(obj);
     return obj;
 }

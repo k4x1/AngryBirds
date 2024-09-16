@@ -10,7 +10,7 @@ class ComponentManager;
 
 class GameObject {
 public:
-    static GameObject* create(const sf::Vector2f& position);
+    static GameObject* create(const sf::Vector2f& position, std::string name);
 
     void setPosition(const sf::Vector2f& position);
     const sf::Vector2f& getPosition() const;
@@ -29,12 +29,12 @@ public:
     void destroy();
     bool isDestroyed() const;
 
+    std::string m_name;
 private:
     GameObject(const sf::Vector2f& position);
 
     sf::Vector2f m_position;
     bool m_isDestroyed;
-
     static std::vector<GameObject*> s_allObjects;
 };
 

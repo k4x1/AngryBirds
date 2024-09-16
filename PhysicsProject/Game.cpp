@@ -41,10 +41,11 @@ void Game::createScene(SceneType scene) {
     };
 
     auto createBird = [&](const sf::Vector2f& position, const std::string& spritePath) {
-        auto bird = GameObject::create(position);
+        auto bird = GameObject::create(position, "bird");
         bird->addComponent<TransformComponent>(position.x, position.y);
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(1.0f,1.0f);
+        bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>(), 50,50);
         return bird;
         };
 
@@ -64,7 +65,7 @@ void Game::createScene(SceneType scene) {
         auto enemy = createBird(sf::Vector2f(700, 100), spritePaths[1]);
 
 
-        auto platform = GameObject::create(sf::Vector2f(375, 500));
+        auto platform = GameObject::create(sf::Vector2f(375, 500), "platform");
         platform->addComponent<RenderComponent>(sf::Color::Green);
 
         auto coin = createBird(sf::Vector2f(400, 300), spritePaths[2]);
@@ -85,7 +86,7 @@ void Game::createScene(SceneType scene) {
     case SceneType::BOSS_FIGHT:
     {
         auto boss = createBird(sf::Vector2f(400, 300), spritePaths[2]);
-        boss->getComponent<SpriteRendererComponent>()->setScale(2.0f, 2.0f);
+        boss->getComponent<TransformComponent>()->scale = sf::Vector2f(2.0f,2.0f);
 
         for (int i = 0; i < 4; ++i) {
             createBird(sf::Vector2f(100 + i * 200, 500), spritePaths[i % 2]);

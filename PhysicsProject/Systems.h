@@ -11,4 +11,5 @@ public:
 class PhysicsSystem {
 public:
     void update(float deltaTime);
+    void checkFloorCollision(TransformComponent* transform, RigidBodyComponent* rigidBody, BoxColliderComponent* collider);
 };

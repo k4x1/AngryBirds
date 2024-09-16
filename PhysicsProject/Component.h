@@ -4,7 +4,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include "GameObject.h"
-
+#include <iostream>
 
 //All components are here because it feels easier to work with over having them all on separate files
 class GameObject; 
@@ -62,18 +62,22 @@ class SpriteRendererComponent : public Component {
 public:
     SpriteRendererComponent(const std::string& texturePath) {
         if (!m_texture.loadFromFile(texturePath)) {
-            // Handle texture loading error
             throw std::runtime_error("Failed to load texture: " + texturePath);
         }
         m_sprite.setTexture(m_texture);
+        m_originalSize = m_texture.getSize();
+        m_desiredSize = sf::Vector2f(m_originalSize);
+        updateScale();
     }
 
-    void setScale(float scaleX, float scaleY) {
-        m_sprite.setScale(scaleX, scaleY);
+    void setDesiredSize(float width, float height) {
+        m_desiredSize = sf::Vector2f(width, height);
+        updateScale();
     }
 
-    void setOrigin(float x, float y) {
-        m_sprite.setOrigin(x, y);
+    void updateTransformScale(const sf::Vector2f& transformScale) {
+        m_desiredSize = sf::Vector2f(transformScale.x * 100, transformScale.y * 100); //100 pixels = 1 unit
+        updateScale();
     }
 
     sf::Sprite& getSprite() {
@@ -81,17 +85,44 @@ public:
     }
 
 private:
+    void updateScale() {
+        float scaleX = m_desiredSize.x / m_originalSize.x;
+        float scaleY = m_desiredSize.y / m_originalSize.y;
+        m_sprite.setScale(scaleX, scaleY);
+    }
+
     sf::Texture m_texture;
     sf::Sprite m_sprite;
+    sf::Vector2u m_originalSize;
+    sf::Vector2f m_desiredSize;
 };
 
 class BoxColliderComponent : public Component {
 public:
-    BoxColliderComponent(TransformComponent* transform) {
-        m_transform = transform;
+    BoxColliderComponent(TransformComponent* transform, float width, float height)
+        : m_transform(transform), m_width(width), m_height(height) {}
+
+    sf::FloatRect getBounds() const {
+        return sf::FloatRect(
+            m_transform->position.x - m_width / 2,
+            m_transform->position.y - m_height / 2,
+            m_width * m_transform->scale.x,
+            m_height * m_transform->scale.y
+        );
     }
+
+    bool intersects(const BoxColliderComponent& other) const {
+        std::cout << "collision with other object"  << std::endl;
+        return getBounds().intersects(other.getBounds());
+    }
+     
+    void setSize(float width, float height) {
+        m_width = width;
+        m_height = height;
+    }
+
 private:
     TransformComponent* m_transform;
-
+    float m_width;
+    float m_height;
 };
-
