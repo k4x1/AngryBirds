@@ -5,10 +5,12 @@
 template<typename T, typename... Args>
 T* ComponentManager::addComponent(GameObject* gameObject, Args&&... args) {
     auto component = std::make_unique<T>(std::forward<Args>(args)...);
+    component->setOwner(gameObject);
     T* ptr = component.get();
     m_components[gameObject].emplace_back(std::move(component));
     return ptr;
 }
+
 
 template<typename T>
 T* ComponentManager::getComponent(GameObject* gameObject) {

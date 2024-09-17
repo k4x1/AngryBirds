@@ -12,7 +12,15 @@ class GameObject;
 class Component {
 public:
     virtual ~Component() = default;
+    virtual void update(float deltaTime) {}
+
+    void setOwner(GameObject* owner) { m_owner = owner; }
+    GameObject* getOwner() const { return m_owner; }
+
+private:
+    GameObject* m_owner = nullptr;
 };
+
 
 class TransformComponent : public Component {
 public:
@@ -35,8 +43,8 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    RigidBodyComponent(float mass = 1.0f, float gravityScale = 1.0f)
-        : mass(mass), gravityScale(gravityScale), velocity(0.0f, 0.0f) {}
+    RigidBodyComponent(float mass = 1.0f, float gravityScale = 1.0f, float restitution = 0.5f)
+        : mass(mass), gravityScale(gravityScale), velocity(0.0f, 0.0f), restitution(restitution) {}
 
     void applyForce(const sf::Vector2f& force) {
         velocity += force / mass;
@@ -53,6 +61,7 @@ public:
         }
     }
 
+    float restitution;
     float mass;
     float gravityScale;
     sf::Vector2f velocity;
@@ -96,33 +105,89 @@ private:
     sf::Vector2u m_originalSize;
     sf::Vector2f m_desiredSize;
 };
-
 class BoxColliderComponent : public Component {
 public:
-    BoxColliderComponent(TransformComponent* transform, float width, float height)
-        : m_transform(transform), m_width(width), m_height(height) {}
-
+    BoxColliderComponent(TransformComponent* transform)
+        : m_transform(transform), m_width(100), m_height(100), m_visible(true) {
+        updateShape();
+    }
     sf::FloatRect getBounds() const {
+        float scaledWidth = m_width * m_transform->scale.x;
+        float scaledHeight = m_height * m_transform->scale.y;
         return sf::FloatRect(
-            m_transform->position.x - m_width / 2,
-            m_transform->position.y - m_height / 2,
-            m_width * m_transform->scale.x,
-            m_height * m_transform->scale.y
+            m_transform->position.x - scaledWidth / 2,
+            m_transform->position.y - scaledHeight / 2,
+            scaledWidth,
+            scaledHeight
         );
     }
 
+
     bool intersects(const BoxColliderComponent& other) const {
-        
         return getBounds().intersects(other.getBounds());
     }
-     
+
     void setSize(float width, float height) {
         m_width = width;
         m_height = height;
+        updateShape();
     }
-    std::function<void(GameObject*)> onCollision;   
+
+    void setVisible(bool visible) {
+        m_visible = visible;
+    }
+
+    void draw(sf::RenderWindow& window) {
+        if (m_visible) {
+
+            updateShape();
+            window.draw(m_shape);
+        }
+    }
+
+    std::function<void(GameObject*)> onCollision;
+
 private:
+    void updateShape() {
+        sf::FloatRect bounds = getBounds();
+        m_shape.setSize(sf::Vector2f(bounds.width, bounds.height));
+        m_shape.setOrigin(0, 0);  
+        m_shape.setPosition(m_transform->position); 
+        m_shape.setRotation(m_transform->rotation);
+        m_shape.setFillColor(sf::Color::Transparent);
+        m_shape.setOutlineColor(sf::Color::Green);
+        m_shape.setOutlineThickness(2);
+    }
+
+
     TransformComponent* m_transform;
     float m_width;
     float m_height;
+    bool m_visible;
+    sf::RectangleShape m_shape;
+};
+
+class FollowMouseComponent : public Component {
+public:
+    FollowMouseComponent(sf::RenderWindow* window) : m_window(window) {}
+
+    void update(float deltaTime) override {
+        if (!m_transform) {
+            m_transform = getOwner()->getComponent<TransformComponent>();
+            if (!m_transform) return;
+        }
+
+        if (m_window) {
+            sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
+
+            sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
+
+            m_transform->position = worldPosition;
+
+        }
+    }
+
+private:
+    TransformComponent* m_transform = nullptr;
+    sf::RenderWindow* m_window = nullptr;
 };

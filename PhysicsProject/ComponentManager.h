@@ -18,6 +18,8 @@ public:
     template<typename T>
     T* getComponent(GameObject* gameObject);
 
+    std::vector<Component*> getAllComponents(GameObject* gameObject);
+
     void removeComponents(GameObject* gameObject);
 
 private:

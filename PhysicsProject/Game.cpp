@@ -45,7 +45,8 @@ void Game::createScene(SceneType scene) {
         bird->addComponent<TransformComponent>(position.x, position.y);
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(1.0f,1.0f);
-        bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>(), 1,1);
+        bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>());
+        
         return bird;
         };
 
@@ -60,7 +61,7 @@ void Game::createScene(SceneType scene) {
     case SceneType::LEVEL_1:
     {
         auto player = createBird(sf::Vector2f(100, 100), spritePaths[0]);
-
+        player->addComponent<FollowMouseComponent>(&m_window);
 
         auto enemy = createBird(sf::Vector2f(700, 100), spritePaths[1]);
 
@@ -87,6 +88,7 @@ void Game::createScene(SceneType scene) {
     {
         auto boss = createBird(sf::Vector2f(400, 300), spritePaths[2]);
         boss->getComponent<TransformComponent>()->scale = sf::Vector2f(2.0f,2.0f);
+      
 
         for (int i = 0; i < 4; ++i) {
             createBird(sf::Vector2f(100 + i * 200, 500), spritePaths[i % 2]);

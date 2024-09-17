@@ -20,7 +20,11 @@ const sf::Vector2f& GameObject::getPosition() const {
     return m_position;
 }
 
-void GameObject::update(float deltaTime) {}
+void GameObject::update(float deltaTime) {
+    for (auto& component : ComponentManager::getInstance().getAllComponents(this)) {
+        component->update(deltaTime);
+    }
+}
 
 void GameObject::draw(sf::RenderWindow& window) {}
 
