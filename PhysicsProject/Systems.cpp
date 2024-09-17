@@ -113,13 +113,13 @@ void PhysicsSystem::resolveCollision(GameObject* obj1, GameObject* obj2) {
     transform1->position -= 1 / rigidBody1->mass * correction;
     transform2->position += 1 / rigidBody2->mass * correction;
 
-    // trigger collision callbacks 
-    if (collider1->onCollision) {
+    //// trigger collision callbacks 
+    //if (collider1->onCollision) {
         collider1->onCollision(obj2);
-    }
-    if (collider2->onCollision) {
+  //  }
+    //if (collider2->onCollision) {
         collider2->onCollision(obj1);
-    }
+    //}
 }
 
 

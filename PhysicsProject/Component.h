@@ -9,9 +9,17 @@
 #include <functional>
 #include "Systems.h"
 #include "EventSystem.h"
+#include "ComponentManager.h"
 //All components are here because it feels easier to work with over having them all on separate files
 class GameObject;
+class ComponentManager;
 
+
+class ICollider {
+public:
+    virtual ~ICollider() = default;
+    virtual void onCollision(GameObject* other) = 0;
+};
 
 class Component {
 public:
@@ -20,6 +28,7 @@ public:
         
     }
     virtual void update(float deltaTime) {}
+    virtual void onCollision(GameObject* other) {}
     virtual void handleEvent(const sf::Event& event) {}
 
     void setOwner(GameObject* owner) {
@@ -89,12 +98,15 @@ public:
                 applyForce(steeringForce);
 
        
-                float currentSpeed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+                float currentSpeed = getSpeed();
                 if (currentSpeed > maxSpeed) {
                     velocity = (velocity / currentSpeed) * maxSpeed;
                 }
             }
         }
+    }
+    float getSpeed() {
+        return std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
     }
     float restitution;
     float mass;
@@ -141,7 +153,7 @@ private:
     sf::Vector2u m_originalSize;
     sf::Vector2f m_desiredSize;
 };
-class BoxColliderComponent : public Component {
+class BoxColliderComponent : public Component, public ICollider {
 public:
     BoxColliderComponent(TransformComponent* transform)
         : m_transform(transform), m_width(100), m_height(100), m_visible(true) {
@@ -181,7 +193,10 @@ public:
         }
     }
 
-    std::function<void(GameObject*)> onCollision;
+    void onCollision(GameObject* other) override {
+        getOwner()->OnCollision(other);
+    }
+
 
 private:
     void updateShape() {
@@ -246,7 +261,7 @@ private:
 
 class BreakableComponent : public Component {
 public:
-    BreakableComponent(int maxHealth = 100, float damagePerCollision = 10.0f)
+    BreakableComponent(int maxHealth = 300, float damagePerCollision = 0.0f)
         : m_maxHealth(maxHealth), m_currentHealth(maxHealth), m_damagePerCollision(damagePerCollision) {}
 
     void update(float deltaTime) override {
@@ -254,15 +269,22 @@ public:
         if (renderComponent) {
             updateColor(renderComponent);
         }
+
     }
 
     void onCollision(GameObject* other) {
+       
+        auto rb = other->getComponent<RigidBodyComponent>();
+        if (rb) {
+            m_damagePerCollision = rb->getSpeed();
+        }
         m_currentHealth -= m_damagePerCollision;
         m_currentHealth = std::max(0.0f, m_currentHealth);
 
         if (m_currentHealth <= 0) {
             getOwner()->destroy();
         }
+     
     }
 
 private:

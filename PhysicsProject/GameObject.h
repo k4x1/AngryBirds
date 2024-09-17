@@ -22,6 +22,7 @@ public:
     T* getComponent();
 
     virtual void update(float deltaTime);
+    virtual void OnCollision(GameObject* other);
     virtual void draw(sf::RenderWindow& window);
 
     static std::vector<GameObject*>& getAllObjects();

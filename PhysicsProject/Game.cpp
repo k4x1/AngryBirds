@@ -73,7 +73,8 @@ void Game::createScene(SceneType scene) {
         platform->addComponent<RenderComponent>(sf::Color::Green);
 
         auto coin = createBird(sf::Vector2f(400, 300), spritePaths[2]);
-
+        coin->addComponent<BreakableComponent>();
+      
 
         m_bird = createBird(sf::Vector2f(200, 200), spritePaths[0]);
 

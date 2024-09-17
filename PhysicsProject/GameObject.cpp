@@ -26,6 +26,17 @@ void GameObject::update(float deltaTime) {
     }
 }
 
+void GameObject::OnCollision(GameObject* other)
+{
+    for (auto& component : ComponentManager::getInstance().getAllComponents(this)) {
+        auto* collider = dynamic_cast<ICollider*>(component);
+        if (!collider) {
+            component->onCollision(other);    
+        }
+    }
+}
+
+
 void GameObject::draw(sf::RenderWindow& window) {}
 
 std::vector<GameObject*>& GameObject::getAllObjects() {
