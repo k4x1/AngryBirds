@@ -55,8 +55,8 @@ public:
 
 class RigidBodyComponent : public Component {
 public:
-    RigidBodyComponent(float mass = 1.0f, float gravityScale = 1.0f, float restitution = 0.5f)
-        : mass(mass), gravityScale(gravityScale), velocity(0.0f, 0.0f), restitution(restitution) {}
+    RigidBodyComponent(float mass = 1.0f, float gravityScale = 1.0f, float restitution = 0.5f, float maxSpeed = 10000.0f)
+        : mass(mass), gravityScale(gravityScale), velocity(0.0f, 0.0f), restitution(restitution), maxSpeed(maxSpeed) {}
 
     void applyForce(const sf::Vector2f& force) {
         velocity += force / mass;
@@ -72,11 +72,34 @@ public:
             transform->position += velocity * deltaTime;
         }
     }
+    void moveTowards(const sf::Vector2f& targetPosition, float speed) {
+        auto transform = getOwner()->getComponent<TransformComponent>();
+        if (transform) {
+            sf::Vector2f direction = targetPosition - transform->position;
+            float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
+            if (distance > 0) {
+                direction /= distance; 
+
+                sf::Vector2f desiredVelocity = direction * speed;
+
+                sf::Vector2f steeringForce = desiredVelocity - velocity;
+
+                applyForce(steeringForce);
+
+       
+                float currentSpeed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+                if (currentSpeed > maxSpeed) {
+                    velocity = (velocity / currentSpeed) * maxSpeed;
+                }
+            }
+        }
+    }
     float restitution;
     float mass;
     float gravityScale;
     sf::Vector2f velocity;
+    float maxSpeed;
 };
 
 class SpriteRendererComponent : public Component {
@@ -184,15 +207,15 @@ public:
     FollowMouseComponent(sf::RenderWindow* window) : m_window(window), m_isClicking(false) {}
 
     void update(float deltaTime) override {
-        if (!m_transform) {
-            m_transform = getOwner()->getComponent<TransformComponent>();
-            if (!m_transform) return;
+        if (!m_rigidbody) {
+            m_rigidbody = getOwner()->getComponent<RigidBodyComponent>();
+            if (!m_rigidbody) return;
         }
 
-        if (m_window) {
+        if (m_window&& m_isClicking) {
             sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
             sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
-            m_transform->position = worldPosition;
+            m_rigidbody->moveTowards(worldPosition,200.0f);
         }
     }
 
@@ -200,7 +223,7 @@ public:
         if (event.type == sf::Event::MouseButtonPressed) {
             if (event.mouseButton.button == sf::Mouse::Left) {
                 m_isClicking = true;
-                std::cout << "Mouse clicked at: " << m_transform->position.x << ", " << m_transform->position.y << std::endl;
+              
             }
         }
         else if (event.type == sf::Event::MouseButtonReleased) {
@@ -213,7 +236,7 @@ public:
     bool isClicking() const { return m_isClicking; }
 
 private:
-    TransformComponent* m_transform = nullptr;
+    RigidBodyComponent* m_rigidbody = nullptr;
     sf::RenderWindow* m_window = nullptr;
     bool m_isClicking;
 };
