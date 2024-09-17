@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "ComponentManager.h"
 #include "Systems.h"
+#include "EventSystem.h"
 #include <algorithm>
 
 Game::Game()
@@ -11,11 +12,13 @@ Game::Game()
     m_window.setFramerateLimit(60);
     m_renderSystem = new RenderSystem();
     m_physicsSystem = new PhysicsSystem();
+    m_eventSystem = &EventSystem::getInstance();
 }
 
 Game::~Game() {
     delete m_renderSystem;
     delete m_physicsSystem;
+
 }
 
 void Game::run() {
@@ -148,6 +151,9 @@ void Game::draw() {
 void Game::handleInput() {
     sf::Event event;
     while (m_window.pollEvent(event)) {
+
+        m_eventSystem->dispatchEvent(event);
+
         if (event.type == sf::Event::Closed)
             m_window.close();
 

@@ -1,6 +1,6 @@
 #include "Systems.h"
 #include <cmath>
-
+#include "EventSystem.h"
 void RenderSystem::update(sf::RenderWindow& window) {
     for (auto& gameObject : GameObject::getAllObjects()) {
         auto transform = gameObject->getComponent<TransformComponent>();
@@ -133,3 +133,23 @@ void PhysicsSystem::checkFloorCollision(TransformComponent* transform, RigidBody
         rigidBody->velocity.y = -rigidBody->velocity.y * rigidBody->restitution;
     }
 }
+
+
+EventSystem& EventSystem::getInstance() {
+    static EventSystem instance;
+    return instance;
+}
+
+void EventSystem::addListener(Component* component) {
+    m_listeners.push_back(component);
+}
+
+void EventSystem::removeListener(Component* component) {
+    m_listeners.erase(std::remove(m_listeners.begin(), m_listeners.end(), component), m_listeners.end());
+}
+
+void EventSystem::dispatchEvent(const sf::Event& event) {
+    for (auto listener : m_listeners) {
+        listener->handleEvent(event);
+    }
+}   

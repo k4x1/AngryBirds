@@ -6,20 +6,32 @@
 #include "GameObject.h"
 #include <iostream>
 #include <functional>
+#include "Systems.h"
+#include "EventSystem.h"
 //All components are here because it feels easier to work with over having them all on separate files
-class GameObject; 
+class GameObject;
+
 
 class Component {
 public:
-    virtual ~Component() = default;
+    virtual ~Component() {
+        EventSystem::getInstance().removeListener(this);
+        
+    }
     virtual void update(float deltaTime) {}
+    virtual void handleEvent(const sf::Event& event) {}
 
-    void setOwner(GameObject* owner) { m_owner = owner; }
+    void setOwner(GameObject* owner) {
+        m_owner = owner;
+        EventSystem::getInstance().addListener(this);
+    }
     GameObject* getOwner() const { return m_owner; }
 
 private:
+
     GameObject* m_owner = nullptr;
 };
+
 
 
 class TransformComponent : public Component {
@@ -163,13 +175,13 @@ private:
     TransformComponent* m_transform;
     float m_width;
     float m_height;
-    bool m_visible;
+    bool m_visible; 
     sf::RectangleShape m_shape;
 };
 
 class FollowMouseComponent : public Component {
 public:
-    FollowMouseComponent(sf::RenderWindow* window) : m_window(window) {}
+    FollowMouseComponent(sf::RenderWindow* window) : m_window(window), m_isClicking(false) {}
 
     void update(float deltaTime) override {
         if (!m_transform) {
@@ -179,15 +191,30 @@ public:
 
         if (m_window) {
             sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
-
             sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
-
             m_transform->position = worldPosition;
-
         }
     }
+
+    void handleEvent(const sf::Event& event) override {
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.mouseButton.button == sf::Mouse::Left) {
+                m_isClicking = true;
+                std::cout << "Mouse clicked at: " << m_transform->position.x << ", " << m_transform->position.y << std::endl;
+            }
+        }
+        else if (event.type == sf::Event::MouseButtonReleased) {
+            if (event.mouseButton.button == sf::Mouse::Left) {
+                m_isClicking = false;
+            }
+        }
+    }
+
+    bool isClicking() const { return m_isClicking; }
 
 private:
     TransformComponent* m_transform = nullptr;
     sf::RenderWindow* m_window = nullptr;
+    bool m_isClicking;
 };
+

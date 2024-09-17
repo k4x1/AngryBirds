@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include "GameObject.h"
 
-// Forward declarations
+
 class RenderSystem;
 class PhysicsSystem;
 
@@ -18,7 +18,7 @@ enum class SceneType {
 class Game {
 public:
     Game();
-    ~Game();  // Add a destructor
+    ~Game();  
     void run();
 
 private:
@@ -29,7 +29,8 @@ private:
 
     sf::RenderWindow m_window;
     SceneType m_currentScene;
-    RenderSystem* m_renderSystem;  // Change to pointer
-    PhysicsSystem* m_physicsSystem;  // Change to pointer
+    RenderSystem* m_renderSystem;  
+    PhysicsSystem* m_physicsSystem; 
+    EventSystem* m_eventSystem;
     GameObject* m_bird;
 };

@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
+    <ClInclude Include="EventSystem.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
   </ItemGroup>
