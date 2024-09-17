@@ -38,5 +38,4 @@ private:
     static std::vector<GameObject*> s_allObjects;
 };
 
-// Include the inline file at the end of the header
 #include "GameObject.inl"

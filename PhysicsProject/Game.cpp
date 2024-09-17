@@ -91,6 +91,7 @@ void Game::createScene(SceneType scene) {
     {
         auto boss = createBird(sf::Vector2f(400, 300), spritePaths[2]);
         boss->getComponent<TransformComponent>()->scale = sf::Vector2f(2.0f,2.0f);
+        boss->addComponent<FollowMouseComponent>(&m_window);
       
 
         for (int i = 0; i < 4; ++i) {

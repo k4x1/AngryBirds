@@ -5,6 +5,7 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include "GameObject.h"
 #include <iostream>
+#include <cmath>
 #include <functional>
 #include "Systems.h"
 #include "EventSystem.h"
@@ -39,7 +40,7 @@ public:
     TransformComponent(float x, float y) : position(x, y) {}
 
     sf::Vector2f position;
-    sf::Vector2f scale = sf::Vector2f(1.0f,1.0f);
+    sf::Vector2f scale = sf::Vector2f(0.25f,0.25f);
     float rotation = 0.0f;
 };
 
@@ -215,7 +216,7 @@ public:
         if (m_window&& m_isClicking) {
             sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
             sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
-            m_rigidbody->moveTowards(worldPosition,200.0f);
+            m_rigidbody->moveTowards(worldPosition,100.0f);
         }
     }
 
@@ -241,3 +242,44 @@ private:
     bool m_isClicking;
 };
 
+
+
+class BreakableComponent : public Component {
+public:
+    BreakableComponent(int maxHealth = 100, float damagePerCollision = 10.0f)
+        : m_maxHealth(maxHealth), m_currentHealth(maxHealth), m_damagePerCollision(damagePerCollision) {}
+
+    void update(float deltaTime) override {
+        auto renderComponent = getOwner()->getComponent<RenderComponent>();
+        if (renderComponent) {
+            updateColor(renderComponent);
+        }
+    }
+
+    void onCollision(GameObject* other) {
+        m_currentHealth -= m_damagePerCollision;
+        m_currentHealth = std::max(0.0f, m_currentHealth);
+
+        if (m_currentHealth <= 0) {
+            getOwner()->destroy();
+        }
+    }
+
+private:
+    void updateColor(RenderComponent* renderComponent) {
+        float healthPercentage = m_currentHealth / m_maxHealth;
+        sf::Color originalColor = sf::Color::White;
+        sf::Color damageColor = sf::Color::Red;
+
+
+        sf::Uint8 r = static_cast<sf::Uint8>(originalColor.r + (damageColor.r - originalColor.r) * (1 - healthPercentage));
+        sf::Uint8 g = static_cast<sf::Uint8>(originalColor.g + (damageColor.g - originalColor.g) * (1 - healthPercentage));
+        sf::Uint8 b = static_cast<sf::Uint8>(originalColor.b + (damageColor.b - originalColor.b) * (1 - healthPercentage));
+
+        renderComponent->color = sf::Color(r, g, b);
+    }
+
+    int m_maxHealth;
+    float m_currentHealth;
+    float m_damagePerCollision;
+};
