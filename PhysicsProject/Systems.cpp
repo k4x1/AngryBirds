@@ -26,10 +26,10 @@ void RenderSystem::update(sf::RenderWindow& window) {
         }
 
         // Draw box collider
-        auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
+       /* auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
         if (boxCollider) {
-            boxCollider->draw(window);
-        }
+            boxCollider.
+        }*/
     }
 }
 PhysicsSystem::PhysicsSystem() {
@@ -52,7 +52,7 @@ void PhysicsSystem::update(float deltaTime) {
         auto rigidBody = gameObject->getComponent<RigidBodyComponent>();
         auto transform = gameObject->getComponent<TransformComponent>();
         if (rigidBody && transform) {
-            if (rigidBody->m_body == nullptr) continue;
+            if (rigidBody->GetBody() == nullptr) continue;
             
             b2Body* body = rigidBody->GetBody();
             b2Vec2 position = body->GetPosition();

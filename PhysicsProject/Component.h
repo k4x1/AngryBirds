@@ -52,7 +52,7 @@ public:
     TransformComponent(float x, float y) : position(x, y) {}
 
     sf::Vector2f position;
-    sf::Vector2f scale = sf::Vector2f(0.25f,0.25f);
+    sf::Vector2f scale = sf::Vector2f(0.5f,0.5f);
     float rotation = 0.0f;
     void setPosition(float x, float y)
     {
@@ -98,7 +98,6 @@ public:
     void SetGravityScale(float scale);
     void SetRestitution(float restitution);
     void SetMaxSpeed(float maxSpeed);
-    b2Body* m_body;
 
 private:
     Box2DWorld* m_world;
@@ -106,9 +105,8 @@ private:
     float m_gravityScale;
     float m_restitution;
     float m_maxSpeed;
-    b2Fixture* m_fixture;
+    b2Body* m_body;
 };
-
 class SpriteRendererComponent : public Component {
 public:
     SpriteRendererComponent(const std::string& texturePath) {
@@ -150,28 +148,65 @@ private:
 
 
 
-class BoxColliderComponent : public Component, public ICollider {
+class CircleColliderComponent : public Component, public ICollider {
 public:
-    BoxColliderComponent(TransformComponent* transform, float width, float height);
+    CircleColliderComponent(float radius) : m_radius(radius) {}
 
-    void createBox2dShape();
-    sf::FloatRect getBounds() const;
-    void update(float deltaTime) override;
-    bool intersects(const BoxColliderComponent& other) const;
-    void setSize(float width, float height);
-    void setVisible(bool visible);
-    void draw(sf::RenderWindow& window);
-    void onCollision(GameObject* other) override;
+    void init() override {
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (!rigidBody) {
+            std::cout << "No RigidBodyComponent found for CircleCollider" << std::endl;
+            return;
+        }
+
+        b2CircleShape shape;
+        shape.m_radius = m_radius;
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &shape;
+        fixtureDef.density = rigidBody->GetMass();
+        fixtureDef.restitution = rigidBody->GetRestitution();
+
+        rigidBody->GetBody()->CreateFixture(&fixtureDef);
+    }
+
+    void onCollision(GameObject* other) override {
+        // Handle collision logic here
+    }
 
 private:
-    void updateSFMLShape();
+    float m_radius;
+};
 
-    TransformComponent* m_transform;
+class BoxColliderComponent : public Component, public ICollider {
+public:
+    BoxColliderComponent(float width, float height) : m_width(width), m_height(height) {}
+
+    void init() override {
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (!rigidBody) {
+            std::cout << "No RigidBodyComponent found for BoxCollider" << std::endl;
+            return;
+        }
+
+        b2PolygonShape shape;
+        shape.SetAsBox(m_width / 2, m_height / 2);
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &shape;
+        fixtureDef.density = rigidBody->GetMass();
+        fixtureDef.restitution = rigidBody->GetRestitution();
+
+        rigidBody->GetBody()->CreateFixture(&fixtureDef);
+    }
+
+    void onCollision(GameObject* other) override {
+        // Handle collision logic here
+    }
+
+private:
     float m_width;
     float m_height;
-    bool m_visible;
-    sf::RectangleShape m_shape;
-    bool m_fixtureCreated;
 };
 
 class FollowMouseComponent : public Component {

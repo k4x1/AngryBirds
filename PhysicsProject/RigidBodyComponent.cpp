@@ -5,10 +5,10 @@
 #include "Box2DWorld.h"
 #include <SFML/System/Vector2.hpp>
 #include "box2d/box2d.h"
-RigidBodyComponent::RigidBodyComponent(Box2DWorld* world, float mass, float gravityScale, float restitution, float maxSpeed)
-    : m_world(world), m_mass(mass), m_gravityScale(gravityScale), m_restitution(restitution), m_maxSpeed(maxSpeed), m_body(nullptr), m_fixture(nullptr) {
-}
 
+
+RigidBodyComponent::RigidBodyComponent(Box2DWorld* world, float mass, float gravityScale, float restitution, float maxSpeed)
+    : m_world(world), m_mass(mass), m_gravityScale(gravityScale), m_restitution(restitution), m_maxSpeed(maxSpeed), m_body(nullptr) {}
 
 RigidBodyComponent::~RigidBodyComponent() {
     if (m_body && m_world) {
@@ -25,8 +25,9 @@ void RigidBodyComponent::update(float deltaTime) {
         createBody();
     }
 }
+
 void RigidBodyComponent::createBody() {
-    if (m_body) return; // Body already created
+    if (m_body) return;
 
     auto transform = getOwner()->getComponent<TransformComponent>();
     if (!transform) {
@@ -38,6 +39,7 @@ void RigidBodyComponent::createBody() {
     bodyDef.type = b2_dynamicBody;
     bodyDef.position.Set(transform->position.x / 30.0f, transform->position.y / 30.0f);
     bodyDef.userData.pointer = reinterpret_cast<uintptr_t>(getOwner());
+
     m_body = m_world->GetWorld()->CreateBody(&bodyDef);
 
     if (!m_body) {
@@ -45,34 +47,22 @@ void RigidBodyComponent::createBody() {
         return;
     }
 
-    // Create a circle shape that matches the sprite size
-    auto spriteRenderer = getOwner()->getComponent<SpriteRendererComponent>();
-    if (spriteRenderer) {
-        sf::FloatRect spriteBounds = spriteRenderer->getSprite().getLocalBounds();
-        float radius = std::max(spriteBounds.width, spriteBounds.height) / 600.0f; // Convert to Box2D units
+    m_body->SetGravityScale(m_gravityScale);
 
-        b2CircleShape shape;
-        shape.m_radius = radius;
-        
-        b2FixtureDef fixtureDef;
-        fixtureDef.shape = &shape;
-        fixtureDef.density = m_mass;
-        fixtureDef.restitution = m_restitution;
-        m_fixture = m_body->CreateFixture(&fixtureDef);
+    // Find and initialize the collider component
+    auto circleCollider = getOwner()->getComponent<CircleColliderComponent>();
+    if (circleCollider) {
+        circleCollider->init();
     }
     else {
-        // Fallback to a default circle shape if no sprite renderer is found
-        b2CircleShape shape;
-        shape.m_radius = 0.5f;
-        
-        b2FixtureDef fixtureDef;
-        fixtureDef.shape = &shape;
-        fixtureDef.density = m_mass;
-        fixtureDef.restitution = m_restitution;
-        m_fixture = m_body->CreateFixture(&fixtureDef);
+        auto boxCollider = getOwner()->getComponent<BoxColliderComponent>();
+        if (boxCollider) {
+            boxCollider->init();
+        }
+        else {
+            std::cout << "No ColliderComponent found for " << getOwner()->getName() << std::endl;
+        }
     }
-
-    m_body->SetGravityScale(m_gravityScale);
 }
 
 void RigidBodyComponent::applyForce(const sf::Vector2f& force) {

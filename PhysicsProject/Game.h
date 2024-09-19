@@ -24,7 +24,7 @@ public:
 private:
     void createScene(SceneType scene);
     void update(float deltaTime);
-    void draw();
+    void draw();  
     void handleInput();
 
     sf::RenderWindow m_window;
