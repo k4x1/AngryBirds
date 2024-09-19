@@ -10,6 +10,8 @@
 #include "Systems.h"
 #include "EventSystem.h"
 #include "ComponentManager.h"
+#include "Box2DWorld.h"
+#include "box2d/box2d.h"
 //All components are here because it feels easier to work with over having them all on separate files
 class GameObject;
 class ComponentManager;
@@ -28,6 +30,7 @@ public:
         
     }
     virtual void update(float deltaTime) {}
+    virtual void init() {}
     virtual void onCollision(GameObject* other) {}
     virtual void handleEvent(const sf::Event& event) {}
 
@@ -51,6 +54,10 @@ public:
     sf::Vector2f position;
     sf::Vector2f scale = sf::Vector2f(0.25f,0.25f);
     float rotation = 0.0f;
+    void setPosition(float x, float y)
+    {
+        position = sf::Vector2f(x, y);
+    }
 };
 
 class RenderComponent : public Component {
@@ -61,58 +68,44 @@ public:
 
     sf::RectangleShape shape;
     sf::Color color;
-};
+}; 
+
 
 class RigidBodyComponent : public Component {
 public:
-    RigidBodyComponent(float mass = 1.0f, float gravityScale = 1.0f, float restitution = 0.5f, float maxSpeed = 10000.0f)
-        : mass(mass), gravityScale(gravityScale), velocity(0.0f, 0.0f), restitution(restitution), maxSpeed(maxSpeed) {}
+    RigidBodyComponent(Box2DWorld* world, float mass = 1.0f, float gravityScale = 1.0f, float restitution = 0.5f, float maxSpeed = 10.0f);
+    ~RigidBodyComponent();
 
-    void applyForce(const sf::Vector2f& force) {
-        velocity += force / mass;
-    }
+    void init() override;
+    void update(float deltaTime) override;
 
-    void update(GameObject* gameObject, float deltaTime) {
-        auto transform = gameObject->getComponent<TransformComponent>();
-        if (transform) {
-            // Apply gravity
-            velocity.y += 98.1f * gravityScale * deltaTime;
+    void createBody();
+    void applyForce(const sf::Vector2f& force);
+    void applyImpulse(const sf::Vector2f& impulse);
+    void setVelocity(const sf::Vector2f& velocity);
+    sf::Vector2f getVelocity() const;
+    void moveTowards(const sf::Vector2f& targetPosition, float speed);
+    float getSpeed() const;
 
-            // Update position
-            transform->position += velocity * deltaTime;
-        }
-    }
-    void moveTowards(const sf::Vector2f& targetPosition, float speed) {
-        auto transform = getOwner()->getComponent<TransformComponent>();
-        if (transform) {
-            sf::Vector2f direction = targetPosition - transform->position;
-            float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    b2Body* GetBody();
 
-            if (distance > 0) {
-                direction /= distance; 
+    float GetMass() const;
+    float GetGravityScale() const;
+    float GetRestitution() const;
+    float GetMaxSpeed() const;
 
-                sf::Vector2f desiredVelocity = direction * speed;
+    void SetMass(float mass);
+    void SetGravityScale(float scale);
+    void SetRestitution(float restitution);
+    void SetMaxSpeed(float maxSpeed);
+    b2Body* m_body;
 
-                sf::Vector2f steeringForce = desiredVelocity - velocity;
-
-                applyForce(steeringForce);
-
-       
-                float currentSpeed = getSpeed();
-                if (currentSpeed > maxSpeed) {
-                    velocity = (velocity / currentSpeed) * maxSpeed;
-                }
-            }
-        }
-    }
-    float getSpeed() {
-        return std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-    }
-    float restitution;
-    float mass;
-    float gravityScale;
-    sf::Vector2f velocity;
-    float maxSpeed;
+private:
+    Box2DWorld* m_world;
+    float m_mass;
+    float m_gravityScale;
+    float m_restitution;
+    float m_maxSpeed;
 };
 
 class SpriteRendererComponent : public Component {
@@ -153,69 +146,31 @@ private:
     sf::Vector2u m_originalSize;
     sf::Vector2f m_desiredSize;
 };
+
+
+
 class BoxColliderComponent : public Component, public ICollider {
 public:
-    BoxColliderComponent(TransformComponent* transform)
-        : m_transform(transform), m_width(100), m_height(100), m_visible(true) {
-        updateShape();
-    }
-    sf::FloatRect getBounds() const {
-        float scaledWidth = m_width * m_transform->scale.x;
-        float scaledHeight = m_height * m_transform->scale.y;
-        return sf::FloatRect(
-            m_transform->position.x - scaledWidth / 2,
-            m_transform->position.y - scaledHeight / 2,
-            scaledWidth,
-            scaledHeight
-        );
-    }
+    BoxColliderComponent(TransformComponent* transform, float width, float height);
 
-
-    bool intersects(const BoxColliderComponent& other) const {
-        return getBounds().intersects(other.getBounds());
-    }
-
-    void setSize(float width, float height) {
-        m_width = width;
-        m_height = height;
-        updateShape();
-    }
-
-    void setVisible(bool visible) {
-        m_visible = visible;
-    }
-
-    void draw(sf::RenderWindow& window) {
-        if (m_visible) {
-
-            updateShape();
-            window.draw(m_shape);
-        }
-    }
-
-    void onCollision(GameObject* other) override {
-        getOwner()->OnCollision(other);
-    }
-
+    void createBox2dShape();
+    sf::FloatRect getBounds() const;
+    void update(float deltaTime) override;
+    bool intersects(const BoxColliderComponent& other) const;
+    void setSize(float width, float height);
+    void setVisible(bool visible);
+    void draw(sf::RenderWindow& window);
+    void onCollision(GameObject* other) override;
 
 private:
-    void updateShape() {
-        sf::FloatRect bounds = getBounds();
-        m_shape.setSize(sf::Vector2f(bounds.width, bounds.height));
-        m_shape.setOrigin(0, 0);  
-        m_shape.setPosition(m_transform->position); 
-        m_shape.setRotation(m_transform->rotation);
-        m_shape.setFillColor(sf::Color::Transparent);
-        m_shape.setOutlineColor(sf::Color::Green);
-        m_shape.setOutlineThickness(2);
-    }
-
+    void updateSFMLShape();
 
     TransformComponent* m_transform;
     float m_width;
     float m_height;
-    bool m_visible; 
+    bool m_visible;
     sf::RectangleShape m_shape;
+    bool m_fixtureCreated;
 };
 
 class FollowMouseComponent : public Component {
@@ -231,7 +186,8 @@ public:
         if (m_window&& m_isClicking) {
             sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
             sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
-            m_rigidbody->moveTowards(worldPosition,100.0f);
+                m_rigidbody->moveTowards(worldPosition,100.0f);
+            //getOwner()->getComponent<TransformComponent>()->position = worldPosition;
         }
     }
 
@@ -305,3 +261,17 @@ private:
     float m_currentHealth;
     float m_damagePerCollision;
 };
+class RevoluteJointComponent : public Component {
+public:
+    RevoluteJointComponent(Box2DWorld* world, RigidBodyComponent* bodyA, RigidBodyComponent* bodyB,
+        const b2Vec2& anchor) {
+        b2RevoluteJointDef jointDef;
+        jointDef.Initialize(bodyA->GetBody(), bodyB->GetBody(), anchor);
+        m_joint = (b2RevoluteJoint*)world->GetWorld()->CreateJoint(&jointDef);
+    }
+
+private:
+    b2RevoluteJoint* m_joint;
+};
+
+// Implement similar classes for other joint types (PrismaticJoint, PulleyJoint, etc.)

@@ -47,10 +47,10 @@ void Game::createScene(SceneType scene) {
         auto bird = GameObject::create(position, "bird");
         bird->addComponent<TransformComponent>(position.x, position.y);
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
-        bird->addComponent<RigidBodyComponent>(1.0f,1.0f);
-        bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>());
-        
-        return bird;
+        bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
+       // bird->addComponent<BoxColliderComponent>(bird->getComponent<TransformComponent>(),1.0f,1.0f);
+
+        return  bird;
         };
 
     switch (scene) {
@@ -121,7 +121,7 @@ void Game::update(float deltaTime) {
           
             if (transform->position.y > 500) {
                 transform->position.y = 500;
-                rigidBody->velocity.y = 0;
+                //rigidBody->velocity.y = 0;
             }
         }
     }

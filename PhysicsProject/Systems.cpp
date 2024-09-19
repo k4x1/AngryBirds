@@ -1,6 +1,10 @@
 #include "Systems.h"
 #include <cmath>
 #include "EventSystem.h"
+
+
+
+
 void RenderSystem::update(sf::RenderWindow& window) {
     for (auto& gameObject : GameObject::getAllObjects()) {
         auto transform = gameObject->getComponent<TransformComponent>();
@@ -28,110 +32,75 @@ void RenderSystem::update(sf::RenderWindow& window) {
         }
     }
 }
+PhysicsSystem::PhysicsSystem() {
+    // Create ground body
+    b2BodyDef groundBodyDef;
+
+    groundBodyDef.position.Set(0.0f, 20.0f);
+    m_groundBody = m_world.CreateBody(&groundBodyDef);
+
+    b2EdgeShape groundShape;
+    groundShape.SetTwoSided(b2Vec2(-40.0f, 0.0f), b2Vec2(40.0f, 0.0f));
+    m_groundBody->CreateFixture(&groundShape, 0.0f);
+}
 
 void PhysicsSystem::update(float deltaTime) {
-    std::vector<GameObject*> collidableObjects;
+    m_world.Step(deltaTime, 6, 2);
 
-    // First pass: update positions and collect collidable objects
+    // Update GameObject positions based on Box2D simulation
     for (auto& gameObject : GameObject::getAllObjects()) {
-        auto transform = gameObject->getComponent<TransformComponent>();
         auto rigidBody = gameObject->getComponent<RigidBodyComponent>();
-        auto collider = gameObject->getComponent<BoxColliderComponent>();
+        auto transform = gameObject->getComponent<TransformComponent>();
+        if (rigidBody && transform) {
+            if (rigidBody->m_body == nullptr) continue;
+            
+            b2Body* body = rigidBody->GetBody();
+            b2Vec2 position = body->GetPosition();
+            float angle = body->GetAngle();
 
-        if (transform && rigidBody && collider) {
-            rigidBody->update(gameObject, deltaTime);
-            collidableObjects.push_back(gameObject);
+            transform->position = sf::Vector2f(position.x * 30.0f, position.y * 30.0f); // convert to pixels
+            transform->rotation = angle * 180.0f / b2_pi;
         }
     }
 
-    // Second pass: check and resolve collisions
-    for (size_t i = 0; i < collidableObjects.size(); ++i) {
-        for (size_t j = i + 1; j < collidableObjects.size(); ++j) {
-            auto collider1 = collidableObjects[i]->getComponent<BoxColliderComponent>();
-            auto collider2 = collidableObjects[j]->getComponent<BoxColliderComponent>();
-
-            if (collider1->intersects(*collider2)) {
-                resolveCollision(collidableObjects[i], collidableObjects[j]);
-            }
+    // Handle collisions
+    for (b2Contact* contact = m_world.GetWorld()->GetContactList(); contact; contact = contact->GetNext()) {
+        if (contact->IsTouching()) {
+            resolveCollision(contact);
         }
+    }
 
-        // Check floor collision
-        auto transform = collidableObjects[i]->getComponent<TransformComponent>();
-        auto rigidBody = collidableObjects[i]->getComponent<RigidBodyComponent>();
-        auto collider = collidableObjects[i]->getComponent<BoxColliderComponent>();
-        checkFloorCollision(transform, rigidBody, collider);
+    
+}
+void PhysicsSystem::resolveCollision(b2Contact* contact) {
+    b2Fixture* fixtureA = contact->GetFixtureA();
+    b2Fixture* fixtureB = contact->GetFixtureB();
+    b2Body* bodyA = fixtureA->GetBody();
+    b2Body* bodyB = fixtureB->GetBody();
+
+    GameObject* objA = reinterpret_cast<GameObject*>(bodyA->GetUserData().pointer);
+    GameObject* objB = reinterpret_cast<GameObject*>(bodyB->GetUserData().pointer);
+
+    if (objA && objB) {
+        auto colliderA = objA->getComponent<BoxColliderComponent>();
+        auto colliderB = objB->getComponent<BoxColliderComponent>();
+
+        if (colliderA) colliderA->onCollision(objB);
+        if (colliderB) colliderB->onCollision(objA);
     }
 }
 
-void PhysicsSystem::resolveCollision(GameObject* obj1, GameObject* obj2) {
-    auto transform1 = obj1->getComponent<TransformComponent>();
-    auto rigidBody1 = obj1->getComponent<RigidBodyComponent>();
-    auto collider1 = obj1->getComponent<BoxColliderComponent>();
-
-    auto transform2 = obj2->getComponent<TransformComponent>();
-    auto rigidBody2 = obj2->getComponent<RigidBodyComponent>();
-    auto collider2 = obj2->getComponent<BoxColliderComponent>();
-
-    sf::FloatRect bounds1 = collider1->getBounds();
-    sf::FloatRect bounds2 = collider2->getBounds();
-
-    // Calculate collision normal
-    sf::Vector2f center1(bounds1.left + bounds1.width / 2, bounds1.top + bounds1.height / 2);
-    sf::Vector2f center2(bounds2.left + bounds2.width / 2, bounds2.top + bounds2.height / 2);
-    sf::Vector2f normal = center2 - center1;
-    float distance = std::sqrt(normal.x * normal.x + normal.y * normal.y);
-    normal /= distance;
-
-    // Calculate overlap
-    float overlap = (bounds1.width + bounds2.width) / 2 - std::abs(center1.x - center2.x);
-    overlap = std::min(overlap, (bounds1.height + bounds2.height) / 2 - std::abs(center1.y - center2.y));
-
-    // Calculate relative velocity
-    sf::Vector2f relativeVelocity = rigidBody2->velocity - rigidBody1->velocity;
-
-    // Calculate relative velocity along the normal
-    float velocityAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
-
-    // Do not resolve if velocities are separating
-    if (velocityAlongNormal > 0)
-        return;
-
-
-    float resitution = std::min(rigidBody1->restitution, rigidBody2->restitution);
-
-    float impulseScalar = -(1 + resitution) * velocityAlongNormal;
-    impulseScalar /= 1 / rigidBody1->mass + 1 / rigidBody2->mass;
-
-    sf::Vector2f impulse = impulseScalar * normal;
-    rigidBody1->velocity -= 1 / rigidBody1->mass * impulse;
-    rigidBody2->velocity += 1 / rigidBody2->mass * impulse;
-
-   
-    const float percent = 1.0f; 
-    const float slop = 0.1f; 
-    sf::Vector2f correction = std::max(overlap - slop, 0.0f) / (1 / rigidBody1->mass + 1 / rigidBody2->mass) * percent * normal;
-    transform1->position -= 1 / rigidBody1->mass * correction;
-    transform2->position += 1 / rigidBody2->mass * correction;
-
-    //// trigger collision callbacks 
-    //if (collider1->onCollision) {
-        collider1->onCollision(obj2);
-  //  }
-    //if (collider2->onCollision) {
-        collider2->onCollision(obj1);
+void PhysicsSystem::checkFloorCollision() {
+    //for (b2Body* body = m_world.GetWorld()->GetBodyList(); body; body = body->GetNext()) {
+    //    if (body->GetType() == b2_dynamicBody) {
+    //        b2Vec2 position = body->GetPosition();
+    //        if (position.y > 16.0f) { // Assuming 16 meters is the floor height
+    //            position.y = 16.0f;
+    //            body->SetTransform(position, body->GetAngle());
+    //            body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, 0));
+    //        }
+    //    }
     //}
-}
-
-
-
-void PhysicsSystem::checkFloorCollision(TransformComponent* transform, RigidBodyComponent* rigidBody, BoxColliderComponent* collider) {
-    float floorY = 500.0f;
-
-    sf::FloatRect bounds = collider->getBounds();
-    if (bounds.top + bounds.height > floorY) {
-        transform->position.y = floorY - bounds.height / 2;
-        rigidBody->velocity.y = -rigidBody->velocity.y * rigidBody->restitution;
-    }
 }
 
 
@@ -152,4 +121,4 @@ void EventSystem::dispatchEvent(const sf::Event& event) {
     for (auto listener : m_listeners) {
         listener->handleEvent(event);
     }
-}   
+}

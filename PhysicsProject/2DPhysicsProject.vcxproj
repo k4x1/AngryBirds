@@ -155,15 +155,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Component.cpp" />
+    <ClCompile Include="BoxColliderComponent.cpp" />
     <ClCompile Include="ComponentManager.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RigidBodyComponent.cpp" />
     <ClCompile Include="Systems.cpp" />
     <ClCompile Include="Systems.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Box2DWorld.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComponentManager.h" />
     <ClInclude Include="EventSystem.h" />

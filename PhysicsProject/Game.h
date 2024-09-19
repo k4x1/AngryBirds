@@ -20,7 +20,7 @@ public:
     Game();
     ~Game();  
     void run();
-
+    Box2DWorld* GetPhysicsWorld() { return m_physicsSystem->GetWorld(); }
 private:
     void createScene(SceneType scene);
     void update(float deltaTime);

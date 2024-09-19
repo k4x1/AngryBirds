@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="RigidBodyComponent.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="BoxColliderComponent.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="ComponentManager.cpp">
+      <Filter>Components\ComponentManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems.h">
+      <Filter>Systems</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Game.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Component.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentManager.h">
+      <Filter>Components\ComponentManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Box2DWorld.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="EventSystem.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GameObject.inl" />
+    <None Include="ComponentManager.inl">
+      <Filter>Components\ComponentManager</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Components">
+      <UniqueIdentifier>{6e69574d-84a5-4025-b9df-abf6133f3376}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Components\ComponentManager">
+      <UniqueIdentifier>{cc6faaf1-069a-4893-ac32-83849b8bd505}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems">
+      <UniqueIdentifier>{880d9713-76d2-4d06-bcba-2f6cce28f04e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
