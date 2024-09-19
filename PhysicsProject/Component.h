@@ -106,6 +106,7 @@ private:
     float m_gravityScale;
     float m_restitution;
     float m_maxSpeed;
+    b2Fixture* m_fixture;
 };
 
 class SpriteRendererComponent : public Component {
@@ -126,7 +127,7 @@ public:
     }
 
     void updateTransformScale(const sf::Vector2f& transformScale) {
-        m_desiredSize = sf::Vector2f(transformScale.x * 100, transformScale.y * 100); //100 pixels = 1 unit
+        m_desiredSize = sf::Vector2f(transformScale.x * 100, transformScale.y * 100); 
         updateScale();
     }
 

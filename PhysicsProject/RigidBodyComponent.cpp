@@ -6,9 +6,9 @@
 #include <SFML/System/Vector2.hpp>
 #include "box2d/box2d.h"
 RigidBodyComponent::RigidBodyComponent(Box2DWorld* world, float mass, float gravityScale, float restitution, float maxSpeed)
-    : m_world(world), m_mass(mass), m_gravityScale(gravityScale), m_restitution(restitution), m_maxSpeed(maxSpeed), m_body(nullptr) {
-   // createBody();
+    : m_world(world), m_mass(mass), m_gravityScale(gravityScale), m_restitution(restitution), m_maxSpeed(maxSpeed), m_body(nullptr), m_fixture(nullptr) {
 }
+
 
 RigidBodyComponent::~RigidBodyComponent() {
     if (m_body && m_world) {
@@ -25,13 +25,12 @@ void RigidBodyComponent::update(float deltaTime) {
         createBody();
     }
 }
-
 void RigidBodyComponent::createBody() {
     if (m_body) return; // Body already created
 
     auto transform = getOwner()->getComponent<TransformComponent>();
     if (!transform) {
-        std::cout << "TransformComponent not found, deferring body creation for " << getOwner()->m_name << std::endl;
+        std::cout << "TransformComponent not found, deferring body creation for " << getOwner()->getName() << std::endl;
         return;
     }
 
@@ -42,17 +41,36 @@ void RigidBodyComponent::createBody() {
     m_body = m_world->GetWorld()->CreateBody(&bodyDef);
 
     if (!m_body) {
-        std::cout << "Failed to create b2Body for " << getOwner()->m_name << std::endl;
+        std::cout << "Failed to create b2Body for " << getOwner()->getName() << std::endl;
         return;
     }
 
-    b2CircleShape shape;
-    shape.m_radius = 0.50f; 
-    b2FixtureDef fixtureDef;
-    fixtureDef.shape = &shape;
-    fixtureDef.density = m_mass;
-    fixtureDef.restitution = m_restitution;
-    m_body->CreateFixture(&fixtureDef);
+    // Create a circle shape that matches the sprite size
+    auto spriteRenderer = getOwner()->getComponent<SpriteRendererComponent>();
+    if (spriteRenderer) {
+        sf::FloatRect spriteBounds = spriteRenderer->getSprite().getLocalBounds();
+        float radius = std::max(spriteBounds.width, spriteBounds.height) / 600.0f; // Convert to Box2D units
+
+        b2CircleShape shape;
+        shape.m_radius = radius;
+        
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &shape;
+        fixtureDef.density = m_mass;
+        fixtureDef.restitution = m_restitution;
+        m_fixture = m_body->CreateFixture(&fixtureDef);
+    }
+    else {
+        // Fallback to a default circle shape if no sprite renderer is found
+        b2CircleShape shape;
+        shape.m_radius = 0.5f;
+        
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &shape;
+        fixtureDef.density = m_mass;
+        fixtureDef.restitution = m_restitution;
+        m_fixture = m_body->CreateFixture(&fixtureDef);
+    }
 
     m_body->SetGravityScale(m_gravityScale);
 }

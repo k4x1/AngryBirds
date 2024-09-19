@@ -51,4 +51,9 @@ bool GameObject::isDestroyed() const {
     return m_isDestroyed;
 }
 
+std::string GameObject::getName()
+{
+    return m_name;
+}
+
 GameObject::GameObject(const sf::Vector2f& position) : m_position(position), m_isDestroyed(false) {}

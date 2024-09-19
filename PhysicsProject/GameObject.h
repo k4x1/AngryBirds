@@ -29,7 +29,7 @@ public:
 
     void destroy();
     bool isDestroyed() const;
-
+    std::string getName();
     std::string m_name;
 private:
     GameObject(const sf::Vector2f& position);

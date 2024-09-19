@@ -1,5 +1,5 @@
 #pragma once
-
+/*
 #include "Component.h"
 #include <SFML/Graphics.hpp>
 
@@ -77,6 +77,7 @@ void BoxColliderComponent::draw(sf::RenderWindow& window) {
 
 
 void BoxColliderComponent::onCollision(GameObject* other) {
+     std::cout << "Collision detected between " << getOwner()->m_name<< " and " << other->m_name << std::endl;
     getOwner()->OnCollision(other);
 }
 
@@ -90,3 +91,4 @@ void BoxColliderComponent::updateSFMLShape() {
     m_shape.setOutlineColor(sf::Color::Green);
     m_shape.setOutlineThickness(2);
 }
+*/
