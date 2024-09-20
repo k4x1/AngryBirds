@@ -16,7 +16,7 @@ RigidBodyComponent::~RigidBodyComponent() {
     }
 }
 
-void RigidBodyComponent::init() {
+void RigidBodyComponent::init(){
     createBody();
 }
 
@@ -24,8 +24,18 @@ void RigidBodyComponent::update(float deltaTime) {
     if (!m_body) {
         createBody();
     }
-}
 
+    if (m_body) {
+        b2Vec2 position = m_body->GetPosition();
+        float angle = m_body->GetAngle();
+
+        auto transform = getOwner()->getComponent<TransformComponent>();
+        if (transform) {
+            transform->position = sf::Vector2f(position.x * 30.0f, position.y * 30.0f);
+            transform->rotation = angle * 180.0f / b2_pi;
+        }
+    }
+}
 void RigidBodyComponent::createBody() {
     if (m_body) return;
 

@@ -15,7 +15,8 @@
 //All components are here because it feels easier to work with over having them all on separate files
 class GameObject;
 class ComponentManager;
-
+class RigidBodyComponent;
+class TransformComponent;
 
 class ICollider {
 public:
@@ -46,18 +47,20 @@ private:
 };
 
 
-
 class TransformComponent : public Component {
 public:
-    TransformComponent(float x, float y) : position(x, y) {}
+    TransformComponent(float x, float y);
+    void setPosition(float x, float y);
+    void setRotation(float angle);
+    void setScale(float scaleX, float scaleY);
 
     sf::Vector2f position;
-    sf::Vector2f scale = sf::Vector2f(0.5f,0.5f);
-    float rotation = 0.0f;
-    void setPosition(float x, float y)
-    {
-        position = sf::Vector2f(x, y);
-    }
+    sf::Vector2f scale;
+    float rotation;
+
+private:
+    void updateBox2DBody();
+    RigidBodyComponent* rigidBody;
 };
 
 class RenderComponent : public Component {
@@ -125,7 +128,7 @@ public:
     }
 
     void updateTransformScale(const sf::Vector2f& transformScale) {
-        m_desiredSize = sf::Vector2f(transformScale.x * 100, transformScale.y * 100); 
+        m_desiredSize = sf::Vector2f(transformScale.x * 60, transformScale.y * 60); 
         updateScale();
     }
 
@@ -183,30 +186,69 @@ public:
     BoxColliderComponent(float width, float height) : m_width(width), m_height(height) {}
 
     void init() override {
+        auto transform = getOwner()->getComponent<TransformComponent>();
         auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (!transform) {
+            std::cout << "No TransformComponent found for BoxCollider" << std::endl;
+            return;
+        }
         if (!rigidBody) {
             std::cout << "No RigidBodyComponent found for BoxCollider" << std::endl;
             return;
         }
 
         b2PolygonShape shape;
-        shape.SetAsBox(m_width / 2, m_height / 2);
+        shape.SetAsBox((m_width) *transform->scale.x, (m_height) *transform->scale.y, b2Vec2(transform->scale.x, transform->scale.y), 0);
 
         b2FixtureDef fixtureDef;
         fixtureDef.shape = &shape;
         fixtureDef.density = rigidBody->GetMass();
         fixtureDef.restitution = rigidBody->GetRestitution();
 
-        rigidBody->GetBody()->CreateFixture(&fixtureDef);
+        m_fixture = rigidBody->GetBody()->CreateFixture(&fixtureDef);
     }
 
     void onCollision(GameObject* other) override {
         // Handle collision logic here
     }
 
+    void debugDraw(sf::RenderWindow& window) {
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (!rigidBody || !rigidBody->GetBody() || !m_fixture) {
+            return;
+        }
+
+        b2PolygonShape* shape = dynamic_cast<b2PolygonShape*>(m_fixture->GetShape());
+        if (!shape) {
+            return;
+        }
+
+        b2Transform xf = rigidBody->GetBody()->GetTransform();
+        int32 vertexCount = shape->m_count;
+        b2Assert(vertexCount <= b2_maxPolygonVertices);
+        b2Vec2 vertices[b2_maxPolygonVertices];
+
+        for (int32 i = 0; i < vertexCount; ++i) {
+            vertices[i] = b2Mul(xf, shape->m_vertices[i]);
+        }
+
+        sf::ConvexShape convexShape(vertexCount);
+        for (int32 i = 0; i < vertexCount; ++i) {
+            convexShape.setPoint(i, sf::Vector2f(vertices[i].x * 30.0f, vertices[i].y * 30.0f));
+        }
+
+        convexShape.setFillColor(sf::Color::Transparent);
+        convexShape.setOutlineColor(sf::Color::Green);
+        convexShape.setOutlineThickness(2);
+
+        window.draw(convexShape);
+    }
+
 private:
     float m_width;
     float m_height;
+ 
+    b2Fixture* m_fixture = nullptr;
 };
 
 class FollowMouseComponent : public Component {

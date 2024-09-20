@@ -21,7 +21,7 @@ public:
     PhysicsSystem();
     void update(float deltaTime);
     void resolveCollision(b2Contact* contact);
-    void checkFloorCollision();
+
 
     Box2DWorld* GetWorld() { return &m_world; }
 

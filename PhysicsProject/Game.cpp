@@ -113,20 +113,12 @@ void Game::createScene(SceneType scene) {
 void Game::update(float deltaTime) {
     m_physicsSystem->update(deltaTime);
  
-    for (auto& gameObject : GameObject::getAllObjects()) {
-        gameObject->update(deltaTime);
-        auto transform = gameObject->getComponent<TransformComponent>();
-        auto rigidBody = gameObject->getComponent<RigidBodyComponent>();
-        if (transform && rigidBody) {
-          
-            if (transform->position.y > 500) {
-                transform->position.y = 500;
-                //rigidBody->velocity.y = 0;
-            }
-        }
-    }
 
     auto& objects = GameObject::getAllObjects();
+    for (auto& gameObject : objects) {
+        gameObject->update(deltaTime);
+
+    }
     objects.erase(std::remove_if(objects.begin(), objects.end(), [](GameObject* obj) {
         if (obj->isDestroyed()) {
             ComponentManager::getInstance().removeComponents(obj);

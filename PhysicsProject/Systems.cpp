@@ -1,3 +1,4 @@
+
 #include "Systems.h"
 #include <cmath>
 #include "EventSystem.h"
@@ -25,11 +26,11 @@ void RenderSystem::update(sf::RenderWindow& window) {
             window.draw(spriteRenderer->getSprite());
         }
 
-        // Draw box collider
-       /* auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
+        //draw box collider, will upgrade to draw Icolliders at some point
+        auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
         if (boxCollider) {
-            boxCollider.
-        }*/
+            boxCollider->debugDraw(window);
+        }
     }
 }
 PhysicsSystem::PhysicsSystem() {
@@ -90,18 +91,6 @@ void PhysicsSystem::resolveCollision(b2Contact* contact) {
     }
 }
 
-void PhysicsSystem::checkFloorCollision() {
-    //for (b2Body* body = m_world.GetWorld()->GetBodyList(); body; body = body->GetNext()) {
-    //    if (body->GetType() == b2_dynamicBody) {
-    //        b2Vec2 position = body->GetPosition();
-    //        if (position.y > 16.0f) { // Assuming 16 meters is the floor height
-    //            position.y = 16.0f;
-    //            body->SetTransform(position, body->GetAngle());
-    //            body->SetLinearVelocity(b2Vec2(body->GetLinearVelocity().x, 0));
-    //        }
-    //    }
-    //}
-}
 
 
 EventSystem& EventSystem::getInstance() {
@@ -122,3 +111,5 @@ void EventSystem::dispatchEvent(const sf::Event& event) {
         listener->handleEvent(event);
     }
 }
+
+

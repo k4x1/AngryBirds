@@ -163,6 +163,7 @@
     <ClCompile Include="RigidBodyComponent.cpp" />
     <ClCompile Include="Systems.cpp" />
     <ClCompile Include="Systems.h" />
+    <ClCompile Include="TransformComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Box2DWorld.h" />

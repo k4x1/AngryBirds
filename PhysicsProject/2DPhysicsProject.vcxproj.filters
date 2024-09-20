@@ -19,6 +19,9 @@
     <ClCompile Include="Systems.h">
       <Filter>Systems</Filter>
     </ClCompile>
+    <ClCompile Include="TransformComponent.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h" />
