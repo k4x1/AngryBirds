@@ -25,11 +25,15 @@ void RenderSystem::update(sf::RenderWindow& window) {
             spriteRenderer->getSprite().setRotation(transform->rotation);
             window.draw(spriteRenderer->getSprite());
         }
-
-        //draw box collider, will upgrade to draw Icolliders at some point
+    
+        //draw collider, will upgrade to draw Icolliders at some point
         auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
         if (boxCollider) {
             boxCollider->debugDraw(window);
+        }
+        auto circleCollider = gameObject->getComponent<CircleColliderComponent>();
+        if (circleCollider) {
+            circleCollider->debugDraw(window);
         }
     }
 }
@@ -83,8 +87,8 @@ void PhysicsSystem::resolveCollision(b2Contact* contact) {
     GameObject* objB = reinterpret_cast<GameObject*>(bodyB->GetUserData().pointer);
 
     if (objA && objB) {
-        auto colliderA = objA->getComponent<BoxColliderComponent>();
-        auto colliderB = objB->getComponent<BoxColliderComponent>();
+        auto colliderA = dynamic_cast<ICollider*>(objA->getComponent<ICollider>());
+        auto colliderB = dynamic_cast<ICollider*>(objB->getComponent<ICollider>());
 
         if (colliderA) colliderA->onCollision(objB);
         if (colliderB) colliderB->onCollision(objA);

@@ -13,7 +13,12 @@ GameObject* GameObject::create(const sf::Vector2f& position, std::string name) {
 
 
 void GameObject::setPosition(const sf::Vector2f& position) {
-    m_position = position;
+    auto transform = getComponent<TransformComponent>();
+    if (transform) {
+        transform->setPosition(position.x, position.y);
+        m_position = position;
+    }
+    
 }
 
 const sf::Vector2f& GameObject::getPosition() const {

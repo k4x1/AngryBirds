@@ -7,9 +7,6 @@
     <ClCompile Include="RigidBodyComponent.cpp">
       <Filter>Components</Filter>
     </ClCompile>
-    <ClCompile Include="BoxColliderComponent.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
     <ClCompile Include="ComponentManager.cpp">
       <Filter>Components\ComponentManager</Filter>
     </ClCompile>

@@ -65,10 +65,30 @@ private:
 
 class RenderComponent : public Component {
 public:
-    RenderComponent(const sf::Color& color) : shape(sf::Vector2f(50, 50)), color(color) {
-        shape.setFillColor(color);
+    RenderComponent(const sf::Color& color) :  color(color) {
+        init();
     }
+    void init() override {
+       
 
+        if (!transform) {
+            std::cout << "No TransformComponent found for BoxCollider" << std::endl;
+
+            return;
+        }
+        shape = sf::RectangleShape(sf::Vector2f(60 * transform->scale.x, 60 * transform->scale.y)),
+            shape.setFillColor(color);
+    }
+    void update(float deltaTime) override {
+        if (!transform) {
+             transform = getOwner()->getComponent<TransformComponent>();
+            init();
+            //d
+            
+        }
+        
+    }
+    TransformComponent* transform;
     sf::RectangleShape shape;
     sf::Color color;
 }; 
@@ -135,7 +155,9 @@ public:
     sf::Sprite& getSprite() {
         return m_sprite;
     }
-
+    void setTint(const sf::Color& color) {
+        m_sprite.setColor(color);
+    }
 private:
     void updateScale() {
         float scaleX = m_desiredSize.x / m_originalSize.x;
@@ -150,36 +172,69 @@ private:
 };
 
 
-
 class CircleColliderComponent : public Component, public ICollider {
 public:
-    CircleColliderComponent(float radius) : m_radius(radius) {}
+    CircleColliderComponent(float radius, const sf::Vector2f& localPosition = sf::Vector2f(10, 10))
+        : m_radius(radius), m_localPosition(localPosition) {}
 
     void init() override {
+        auto transform = getOwner()->getComponent<TransformComponent>();
         auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (!transform) {
+            std::cout << "No TransformComponent found for CircleCollider" << std::endl;
+            return;
+        }
         if (!rigidBody) {
             std::cout << "No RigidBodyComponent found for CircleCollider" << std::endl;
             return;
         }
 
         b2CircleShape shape;
-        shape.m_radius = m_radius;
+        shape.m_radius = m_radius * transform->scale.x; // radius based on scale
+        shape.m_p = b2Vec2(m_localPosition.x / 30.0f, m_localPosition.y / 30.0f); 
 
         b2FixtureDef fixtureDef;
         fixtureDef.shape = &shape;
         fixtureDef.density = rigidBody->GetMass();
         fixtureDef.restitution = rigidBody->GetRestitution();
 
-        rigidBody->GetBody()->CreateFixture(&fixtureDef);
+        m_fixture = rigidBody->GetBody()->CreateFixture(&fixtureDef);
     }
 
     void onCollision(GameObject* other) override {
-        // Handle collision logic here
+        getOwner()->OnCollision(other);
+    }
+
+    void debugDraw(sf::RenderWindow& window) {
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (!rigidBody || !rigidBody->GetBody() || !m_fixture) {
+            return;
+        }
+
+        b2CircleShape* shape = dynamic_cast<b2CircleShape*>(m_fixture->GetShape());
+        if (!shape) {
+            return;
+        }
+
+        b2Transform xf = rigidBody->GetBody()->GetTransform();
+        b2Vec2 center = xf.p + b2Mul(xf.q, shape->m_p); 
+        float radius = shape->m_radius;
+
+        sf::CircleShape circleShape(radius * 30.0f);
+        circleShape.setPosition(center.x * 30.0f - radius * 30.0f, center.y * 30.0f - radius * 30.0f);
+        circleShape.setFillColor(sf::Color::Transparent);
+        circleShape.setOutlineColor(sf::Color::Blue);
+        circleShape.setOutlineThickness(2);
+
+        window.draw(circleShape);
     }
 
 private:
     float m_radius;
+    sf::Vector2f m_localPosition;
+    b2Fixture* m_fixture = nullptr;
 };
+
 
 class BoxColliderComponent : public Component, public ICollider {
 public:
@@ -209,7 +264,7 @@ public:
     }
 
     void onCollision(GameObject* other) override {
-        // Handle collision logic here
+        getOwner()->OnCollision(other);
     }
 
     void debugDraw(sf::RenderWindow& window) {
@@ -295,7 +350,7 @@ private:
 
 class BreakableComponent : public Component {
 public:
-    BreakableComponent(int maxHealth = 300, float damagePerCollision = 0.0f)
+    BreakableComponent(int maxHealth = 10, float damagePerCollision = 0.0f)
         : m_maxHealth(maxHealth), m_currentHealth(maxHealth), m_damagePerCollision(damagePerCollision) {}
 
     void update(float deltaTime) override {
@@ -303,21 +358,25 @@ public:
         if (renderComponent) {
             updateColor(renderComponent);
         }
-
+        auto spriteRenderer = getOwner()->getComponent<SpriteRendererComponent>();
+        if (spriteRenderer) {
+            updateSpriteColor(spriteRenderer);
+        }
     }
 
     void onCollision(GameObject* other) {
-       
         auto rb = other->getComponent<RigidBodyComponent>();
-        if (rb) {
-            m_damagePerCollision = rb->getSpeed();
-        }
+        float speed = rb->getSpeed();
+    
+        m_damagePerCollision = (rb && speed > 3.0f) ? speed : 0;
+        
         m_currentHealth -= m_damagePerCollision;
         m_currentHealth = std::max(0.0f, m_currentHealth);
 
         if (m_currentHealth <= 0) {
             getOwner()->destroy();
         }
+        std::cout << getOwner()->getName() << " collided with: " << other->getName() << "| I took "<< m_damagePerCollision << " health" << std::endl;
      
     }
 
@@ -334,7 +393,20 @@ private:
 
         renderComponent->color = sf::Color(r, g, b);
     }
+    void updateSpriteColor(SpriteRendererComponent* spriteRenderer) {
+        float healthPercentage = m_currentHealth / m_maxHealth;
+        sf::Color tint = interpolateColor(sf::Color::White, sf::Color::Red, 1 - healthPercentage);
 
+        spriteRenderer->setTint(tint);
+    }
+
+    sf::Color interpolateColor(const sf::Color& color1, const sf::Color& color2, float factor) {
+        return sf::Color(
+            static_cast<sf::Uint8>(color1.r + (color2.r - color1.r) * factor),
+            static_cast<sf::Uint8>(color1.g + (color2.g - color1.g) * factor),
+            static_cast<sf::Uint8>(color1.b + (color2.b - color1.b) * factor)
+        );
+    }
     int m_maxHealth;
     float m_currentHealth;
     float m_damagePerCollision;

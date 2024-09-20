@@ -40,7 +40,8 @@ void Game::createScene(SceneType scene) {
     const std::vector<std::string> spritePaths = {
         "Sprites/chick",
         "Sprites/duck",
-        "Sprites/parrot"
+        "Sprites/parrot",
+        "Sprites/dannyInRealLife"
     };
 
     auto createBird = [&](const sf::Vector2f& position, const std::string& spritePath) {
@@ -49,9 +50,30 @@ void Game::createScene(SceneType scene) {
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
          bird->addComponent<BoxColliderComponent>(1.0f,1.0f);
-
+  
         return  bird;
         };
+    auto createPig= [&](const sf::Vector2f& position, const std::string& spritePath  = "Sprites/dannyInRealLife") {
+        auto pig = GameObject::create(position, "pig");
+        auto transform = pig->addComponent<TransformComponent>(position.x, position.y);
+        transform->setScale(1.5, 1.5);
+        pig->addComponent<SpriteRendererComponent>(spritePath + ".png");
+        pig->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
+        pig->addComponent<CircleColliderComponent>(1.0f, sf::Vector2f(46, 48));
+        pig->addComponent<BreakableComponent>(20);
+        return pig;
+        };
+    auto createPlatform = [&](const sf::Vector2f& position, const sf::Vector2f& size, const sf::Color color) {
+        auto plat = GameObject::create(position, "platform");
+        plat->addComponent<TransformComponent>(position.x, position.y);
+        plat->getComponent<TransformComponent>()->setScale(size.x, size.y);
+        plat->addComponent<RenderComponent>(color);
+        plat->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 0.0f);
+        plat->addComponent<BoxColliderComponent>(size.x, size.y);
+        plat->addComponent<BreakableComponent>(20);
+        return plat;
+        };
+
 
     switch (scene) {
     case SceneType::MAIN_MENU:
@@ -59,6 +81,8 @@ void Game::createScene(SceneType scene) {
         createBird(sf::Vector2f(375, 275), spritePaths[0]);
         createBird(sf::Vector2f(200, 200), spritePaths[1]);
         createBird(sf::Vector2f(550, 350), spritePaths[2]);
+       auto danny =  createBird(sf::Vector2f(550, 350), spritePaths[3]);
+       danny->getComponent<TransformComponent>()->setScale(2, 2);
     }
     break;
     case SceneType::LEVEL_1:
@@ -69,15 +93,14 @@ void Game::createScene(SceneType scene) {
         auto enemy = createBird(sf::Vector2f(700, 100), spritePaths[1]);
 
 
-        auto platform = GameObject::create(sf::Vector2f(375, 500), "platform");
-        platform->addComponent<RenderComponent>(sf::Color::Green);
+        auto platform = createPlatform(sf::Vector2f(375, 200), sf::Vector2f(1, 1), sf::Color::Cyan);
+       
 
         auto coin = createBird(sf::Vector2f(400, 300), spritePaths[2]);
-        coin->addComponent<BreakableComponent>();
-      
 
         m_bird = createBird(sf::Vector2f(200, 200), spritePaths[0]);
 
+        createPig(sf::Vector2f(233, 233));
         auto fallingObject = createBird(sf::Vector2f(400, 0), spritePaths[1]);
     }
     break;
