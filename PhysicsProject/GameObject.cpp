@@ -25,6 +25,13 @@ const sf::Vector2f& GameObject::getPosition() const {
     return m_position;
 }
 
+void GameObject::start()
+{
+    for (auto& component : ComponentManager::getInstance().getAllComponents(this)) {
+        component->start();
+    }
+}
+
 void GameObject::update(float deltaTime) {
     for (auto& component : ComponentManager::getInstance().getAllComponents(this)) {
         component->update(deltaTime);

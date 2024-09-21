@@ -21,6 +21,7 @@ public:
     template<typename T>
     T* getComponent();
 
+    virtual void start();
     virtual void update(float deltaTime);
     virtual void OnCollision(GameObject* other);
     virtual void draw(sf::RenderWindow& window);

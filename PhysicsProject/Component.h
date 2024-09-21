@@ -32,6 +32,7 @@ public:
     }
     virtual void update(float deltaTime) {}
     virtual void init() {}
+    virtual void start() {}
     virtual void onCollision(GameObject* other) {}
     virtual void handleEvent(const sf::Event& event) {}
 
@@ -366,7 +367,7 @@ public:
 
     void onCollision(GameObject* other) {
         auto rb = other->getComponent<RigidBodyComponent>();
-        float speed = rb->getSpeed();
+        float speed = rb->getSpeed();   
     
         m_damagePerCollision = (rb && speed > 3.0f) ? speed : 0;
         
@@ -422,6 +423,85 @@ public:
 
 private:
     b2RevoluteJoint* m_joint;
+};
+class BirdLauncherComponent : public Component {
+public:
+    using BirdCreationFunction = std::function<GameObject* (const sf::Vector2f&, const std::string&)>;
+
+    BirdLauncherComponent(sf::RenderWindow* window, const sf::Vector2f& spawnPosition, BirdCreationFunction createBirdFunction, const std::string& spritePath)
+        : m_window(window), m_spawnPosition(spawnPosition), m_createBirdFunction(createBirdFunction), m_spritePath(spritePath), m_bird(nullptr), m_isDragging(false) {}
+
+    void start() override {
+        spawnBird();
+    }
+
+    void update(float deltaTime) override {
+        if (m_bird && m_isDragging) {
+            auto transform = m_bird->getComponent<TransformComponent>();
+            if (transform) {
+                sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
+                sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
+                transform->setPosition(worldPosition.x, worldPosition.y);
+            }
+        }
+    }
+
+    void handleEvent(const sf::Event& event) override {
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.mouseButton.button == sf::Mouse::Left) {
+                if (m_bird) {
+                    m_isDragging = true;
+                }
+            }
+        }
+        else if (event.type == sf::Event::MouseButtonReleased) {
+            if (event.mouseButton.button == sf::Mouse::Left && m_isDragging) {
+                launchBird();
+                m_isDragging = false;
+            }
+        }
+    }
+
+private:
+    void spawnBird() {
+        m_bird = m_createBirdFunction(m_spawnPosition, m_spritePath);
+        m_bird->addComponent<FollowMouseComponent>(m_window);
+    }
+
+    void launchBird() {
+        if (!m_bird) return;
+
+        auto rigidBody = m_bird->getComponent<RigidBodyComponent>();
+        if (!rigidBody) return;
+
+        sf::Vector2i mousePosition = sf::Mouse::getPosition(*m_window);
+        sf::Vector2f worldPosition = m_window->mapPixelToCoords(mousePosition);
+
+        auto transform = m_bird->getComponent<TransformComponent>();
+        if (!transform) return;
+
+        sf::Vector2f launchDirection = transform->position - worldPosition;
+        float launchDistance = std::sqrt(launchDirection.x * launchDirection.x + launchDirection.y * launchDirection.y);
+        float launchForce = std::min(launchDistance * 0.1f, 10.0f); // Adjust this value to control the maximum launch force
+
+        launchDirection /= launchDistance; // Normalize the vector
+        launchDirection *= launchForce;
+
+        rigidBody->applyImpulse(launchDirection);
+
+        // Remove the FollowMouseComponent
+       // m_bird->removeComponent<FollowMouseComponent>();
+
+        // Reset the launcher
+        m_bird = nullptr;
+    }
+
+    sf::RenderWindow* m_window;
+    sf::Vector2f m_spawnPosition;
+    BirdCreationFunction m_createBirdFunction;
+    std::string m_spritePath;
+    GameObject* m_bird;
+    bool m_isDragging;
 };
 
 // Implement similar classes for other joint types (PrismaticJoint, PulleyJoint, etc.)

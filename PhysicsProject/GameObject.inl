@@ -11,3 +11,4 @@ template<typename T>
 T* GameObject::getComponent() {
     return ComponentManager::getInstance().getComponent<T>(this);
 }
+
