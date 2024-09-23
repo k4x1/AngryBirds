@@ -78,10 +78,10 @@ void Game::createScene(SceneType scene) {
     switch (scene) {
     case SceneType::MAIN_MENU:
     {
-        auto launcher = GameObject::create(sf::Vector2f(700, 300), "launcher");
-        launcher->addComponent<TransformComponent>(700, 300);
+        auto launcher = GameObject::create(sf::Vector2f(300, 300), "launcher");
+        launcher->addComponent<TransformComponent>(300, 300);
         launcher->addComponent<RenderComponent>(sf::Color::Red);
-        launcher->addComponent<BirdLauncherComponent>(&m_window, sf::Vector2f(700, 300),createBird,spritePaths[1]);
+        launcher->addComponent<BirdLauncherComponent>(&m_window, sf::Vector2f(300, 300),createBird,spritePaths[2]);
         createBird(sf::Vector2f(375, 275), spritePaths[0]);
         createBird(sf::Vector2f(200, 200), spritePaths[1]);
         createBird(sf::Vector2f(550, 350), spritePaths[2]);

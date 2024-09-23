@@ -1,5 +1,7 @@
-// Systems.h
 #pragma once
+#ifndef SYSTEMS_H
+#define SYSTEMS_H
+
 #include <SFML/Graphics.hpp>
 #include "GameObject.h"
 #include "Component.h"
@@ -21,11 +23,10 @@ public:
     PhysicsSystem();
     void update(float deltaTime);
     void resolveCollision(b2Contact* contact);
-
-
     Box2DWorld* GetWorld() { return &m_world; }
 
 private:
     Box2DWorld m_world;
     b2Body* m_groundBody;
 };
+#endif 

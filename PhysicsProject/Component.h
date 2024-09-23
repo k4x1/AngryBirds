@@ -73,8 +73,6 @@ public:
        
 
         if (!transform) {
-            std::cout << "No TransformComponent found for BoxCollider" << std::endl;
-
             return;
         }
         shape = sf::RectangleShape(sf::Vector2f(60 * transform->scale.x, 60 * transform->scale.y)),
@@ -244,12 +242,7 @@ public:
     void init() override {
         auto transform = getOwner()->getComponent<TransformComponent>();
         auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
-        if (!transform) {
-            std::cout << "No TransformComponent found for BoxCollider" << std::endl;
-            return;
-        }
-        if (!rigidBody) {
-            std::cout << "No RigidBodyComponent found for BoxCollider" << std::endl;
+        if (!transform|| !rigidBody) {
             return;
         }
 
@@ -351,7 +344,7 @@ private:
 
 class BreakableComponent : public Component {
 public:
-    BreakableComponent(int maxHealth = 10, float damagePerCollision = 0.0f)
+    BreakableComponent(float maxHealth = 10, float damagePerCollision = 0.0f)
         : m_maxHealth(maxHealth), m_currentHealth(maxHealth), m_damagePerCollision(damagePerCollision) {}
 
     void update(float deltaTime) override {
@@ -408,7 +401,7 @@ private:
             static_cast<sf::Uint8>(color1.b + (color2.b - color1.b) * factor)
         );
     }
-    int m_maxHealth;
+    float m_maxHealth;
     float m_currentHealth;
     float m_damagePerCollision;
 };

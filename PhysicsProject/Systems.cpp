@@ -1,4 +1,4 @@
-
+#pragma once
 #include "Systems.h"
 #include <cmath>
 #include "EventSystem.h"

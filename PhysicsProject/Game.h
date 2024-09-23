@@ -4,8 +4,6 @@
 #include "GameObject.h"
 
 
-class RenderSystem;
-class PhysicsSystem;
 
 enum class SceneType {
     MAIN_MENU,
