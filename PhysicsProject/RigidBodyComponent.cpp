@@ -83,9 +83,10 @@ void RigidBodyComponent::applyForce(const sf::Vector2f& force) {
 
 void RigidBodyComponent::applyImpulse(const sf::Vector2f& impulse) {
     if (m_body) {
-        m_body->ApplyLinearImpulseToCenter(b2Vec2(impulse.x, impulse.y), true);
+        m_body->ApplyLinearImpulse(b2Vec2(impulse.x, impulse.y), m_body->GetWorldCenter(), true);
     }
 }
+
 
 void RigidBodyComponent::setVelocity(const sf::Vector2f& velocity) {
     if (m_body) {
