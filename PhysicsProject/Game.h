@@ -18,7 +18,13 @@ public:
     Game();
     ~Game();  
     void run();
-    Box2DWorld* GetPhysicsWorld() { return m_physicsSystem->GetWorld(); }
+    Box2DWorld* GetPhysicsWorld() {
+        if (m_physicsSystem == nullptr || m_physicsSystem->GetWorld() == nullptr) {
+            std::cout << "Error: Physics world is null" << std::endl;
+            // Handle the error appropriately, maybe throw an exception or return a default world
+        }
+        return m_physicsSystem->GetWorld();
+    }
 private:
     void createScene(SceneType scene);
     void update(float deltaTime);

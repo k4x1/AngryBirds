@@ -23,8 +23,13 @@ Game::~Game() {
 
 void Game::run() {
     sf::Clock clock;
+    if (!m_physicsSystem || !m_physicsSystem->GetWorld()) {
+        std::cout << "Error: Physics world not properly initialized" << std::endl;
+        return;
+    }
     while (m_window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
+        
         handleInput();
         update(deltaTime);
         draw();
@@ -54,13 +59,27 @@ void Game::createScene(SceneType scene) {
         return  bird;
         };
     auto createPig= [&](const sf::Vector2f& position, const std::string& spritePath  = "Sprites/dannyInRealLife") {
+        std::cout << "Creating pig at position: " << position.x << ", " << position.y << std::endl;
         auto pig = GameObject::create(position, "pig");
+        std::cout << "Pig created with name: " << pig->getName() << std::endl;
+
+        std::cout << "Adding TransformComponent to pig" << std::endl;
         auto transform = pig->addComponent<TransformComponent>(position.x, position.y);
         transform->setScale(1.5, 1.5);
+
+        std::cout << "Adding SpriteRendererComponent to pig" << std::endl;
         pig->addComponent<SpriteRendererComponent>(spritePath + ".png");
+
+        std::cout << "Adding RigidBodyComponent to pig" << std::endl;
         pig->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
+
+        std::cout << "Adding CircleColliderComponent to pig" << std::endl;
         pig->addComponent<CircleColliderComponent>(1.0f, sf::Vector2f(46, 48));
+
+        std::cout << "Adding BreakableComponent to pig" << std::endl;
         pig->addComponent<BreakableComponent>(20);
+
+        std::cout << "Pig creation completed" << std::endl;
         return pig;
         };
     auto createPlatform = [&](const sf::Vector2f& position, const sf::Vector2f& size, const sf::Color color) {
@@ -78,31 +97,23 @@ void Game::createScene(SceneType scene) {
     switch (scene) {
     case SceneType::MAIN_MENU:
     {
-        auto launcher = GameObject::create(sf::Vector2f(300, 300), "launcher");
-        launcher->addComponent<TransformComponent>(300, 300);
-        launcher->addComponent<RenderComponent>(sf::Color::Red);
-        launcher->addComponent<BirdLauncherComponent>( &m_window, GetPhysicsWorld(), sf::Vector2f(300, 300), createBird, spritePaths[2]);
+      
         createBird(sf::Vector2f(375, 275), spritePaths[0]);
         createBird(sf::Vector2f(200, 200), spritePaths[1]);
-        createBird(sf::Vector2f(550, 350), spritePaths[2]);
-       auto danny =  createBird(sf::Vector2f(550, 350), spritePaths[3]);
-       danny->getComponent<TransformComponent>()->setScale(2, 2);
+  
+       auto danny =  createPig(sf::Vector2f(550, 350));
+   
     }
     break;
     case SceneType::LEVEL_1:
     {
-        auto player = createBird(sf::Vector2f(100, 100), spritePaths[0]);
-        player->addComponent<FollowMouseComponent>(&m_window);
 
-        auto enemy = createBird(sf::Vector2f(700, 100), spritePaths[1]);
+        auto launcher = GameObject::create(sf::Vector2f(300, 300), "launcher");
+        launcher->addComponent<TransformComponent>(300, 300);
+        launcher->addComponent<RenderComponent>(sf::Color::Red);
+        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), sf::Vector2f(300, 300), createBird, spritePaths[2]);
 
 
-        auto platform = createPlatform(sf::Vector2f(375, 200), sf::Vector2f(1, 1), sf::Color::Cyan);
-       
-
-        auto coin = createBird(sf::Vector2f(400, 300), spritePaths[2]);
-
-        m_bird = createBird(sf::Vector2f(200, 200), spritePaths[0]);
 
         createPig(sf::Vector2f(233, 233));
         auto fallingObject = createBird(sf::Vector2f(400, 0), spritePaths[1]);
@@ -134,11 +145,28 @@ void Game::createScene(SceneType scene) {
     }
     break;
     }
-  
-    for (auto& gameObject :  GameObject::getAllObjects()) {
-        gameObject->start();
+    for (size_t i = 0; i < GameObject::getAllObjects().size(); ++i) {
+        auto& gameObject = GameObject::getAllObjects()[i];
+        if (gameObject == nullptr) {
+            std::cout << "Error: Null game object encountered at index " << i << std::endl;
+            continue;
+        }
 
+        std::cout << "Starting object at index " << i << std::endl;
+        try {
+            std::cout << "Object name: " << gameObject->getName() << std::endl;
+            gameObject->start();
+            std::cout << "Started object: " << gameObject->getName() << std::endl;
+        }
+        catch (const std::exception& e) {
+            std::cout << "Exception caught while starting object at index " << i << ": " << e.what() << std::endl;
+        }
+        catch (...) {
+            std::cout << "Unknown exception caught while starting object at index " << i << std::endl;
+        }
     }
+
+
 }
 
 

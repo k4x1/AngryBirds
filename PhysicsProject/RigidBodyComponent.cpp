@@ -8,7 +8,7 @@
 
 
 RigidBodyComponent::RigidBodyComponent(Box2DWorld* world, float mass, float gravityScale, float restitution, float maxSpeed)
-    : m_world(world), m_mass(mass), m_gravityScale(gravityScale), m_restitution(restitution), m_maxSpeed(maxSpeed), m_body(nullptr) {}
+    : m_world(world), m_mass(mass), m_gravityScale(gravityScale), m_restitution(restitution), m_maxSpeed(maxSpeed), m_body(nullptr), m_gravityOn(true) {}
 
 RigidBodyComponent::~RigidBodyComponent() {
     if (m_body && m_world) {
@@ -17,6 +17,7 @@ RigidBodyComponent::~RigidBodyComponent() {
 }
 
 void RigidBodyComponent::init(){
+
     createBody();
 }
 
@@ -30,6 +31,7 @@ void RigidBodyComponent::update(float deltaTime) {
         float angle = m_body->GetAngle();
 
         auto transform = getOwner()->getComponent<TransformComponent>();
+        
         if (transform) {
             transform->position = sf::Vector2f(position.x * 30.0f, position.y * 30.0f);
             transform->rotation = angle * 180.0f / b2_pi;
@@ -79,6 +81,21 @@ void RigidBodyComponent::applyForce(const sf::Vector2f& force) {
     if (m_body) {
         m_body->ApplyForceToCenter(b2Vec2(force.x, force.y), true);
     }
+}
+
+void RigidBodyComponent::toggleGravity(bool turnedOn) {
+
+    if (!m_body) {
+        std::cout << "Error: m_body is null in toggleGravity" << std::endl;
+        return;
+    }
+    if (turnedOn) {
+        SetGravityScale(m_gravityScale);
+    }
+    else {
+        SetGravityScale(0);
+    }
+
 }
 
 void RigidBodyComponent::applyImpulse(const sf::Vector2f& impulse) {
@@ -150,10 +167,10 @@ void RigidBodyComponent::SetMass(float mass) {
 }
 
 void RigidBodyComponent::SetGravityScale(float scale) {
-    m_gravityScale = scale;
     if (m_body) {
         m_body->SetGravityScale(scale);
     }
+  
 }
 
 void RigidBodyComponent::SetRestitution(float restitution) {

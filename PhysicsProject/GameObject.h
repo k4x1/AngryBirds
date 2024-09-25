@@ -31,9 +31,10 @@ public:
     void destroy();
     bool isDestroyed() const;
     std::string getName();
-    std::string m_name;
-private:
+    std::string m_name = "Empty Name";
     GameObject(const sf::Vector2f& position);
+    ~GameObject();
+private:
 
     sf::Vector2f m_position;
     bool m_isDestroyed;

@@ -35,6 +35,10 @@ void RenderSystem::update(sf::RenderWindow& window) {
         if (circleCollider) {
             circleCollider->debugDraw(window);
         }
+        auto launcherRope = gameObject->getComponent<BirdLauncherComponent>();
+        if (launcherRope) {
+            launcherRope->drawRope(window);
+        }
     }
 }
 PhysicsSystem::PhysicsSystem() {
@@ -57,12 +61,14 @@ void PhysicsSystem::update(float deltaTime) {
         auto rigidBody = gameObject->getComponent<RigidBodyComponent>();
         auto transform = gameObject->getComponent<TransformComponent>();
         if (rigidBody && transform) {
-            if (rigidBody->GetBody() == nullptr) continue;
+             
+            if (!rigidBody->GetBody()) {
+                continue;
+            }
             
             b2Body* body = rigidBody->GetBody();
             b2Vec2 position = body->GetPosition();
             float angle = body->GetAngle();
-
             transform->position = sf::Vector2f(position.x * 30.0f, position.y * 30.0f); // convert to pixels
             transform->rotation = angle * 180.0f / b2_pi;
         }
@@ -78,6 +84,7 @@ void PhysicsSystem::update(float deltaTime) {
     
 }
 void PhysicsSystem::resolveCollision(b2Contact* contact) {
+
     b2Fixture* fixtureA = contact->GetFixtureA();
     b2Fixture* fixtureB = contact->GetFixtureB();
     b2Body* bodyA = fixtureA->GetBody();
@@ -92,8 +99,9 @@ void PhysicsSystem::resolveCollision(b2Contact* contact) {
 
         if (colliderA) colliderA->onCollision(objB);
         if (colliderB) colliderB->onCollision(objA);
-    }
-}
+    } 
+
+} 
 
 
 
