@@ -25,6 +25,9 @@
     <ClCompile Include="BirdLauncherComponent.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="LevelManager.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h" />
@@ -39,6 +42,9 @@
       <Filter>Systems</Filter>
     </ClInclude>
     <ClInclude Include="EventSystem.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelManager.h">
       <Filter>Systems</Filter>
     </ClInclude>
   </ItemGroup>

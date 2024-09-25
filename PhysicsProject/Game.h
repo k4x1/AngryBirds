@@ -2,9 +2,11 @@
 
 #include <SFML/Graphics.hpp>
 #include "GameObject.h"
-
-
-
+#include "LevelManager.h"
+class Box2DWorld; 
+class RenderSystem;
+class PhysicsSystem;
+class EventSystem;
 enum class SceneType {
     MAIN_MENU,
     LEVEL_1,
@@ -16,7 +18,7 @@ enum class SceneType {
 class Game {
 public:
     Game();
-    ~Game();  
+    ~Game();
     void run();
     Box2DWorld* GetPhysicsWorld() {
         if (m_physicsSystem == nullptr || m_physicsSystem->GetWorld() == nullptr) {
@@ -25,16 +27,32 @@ public:
         }
         return m_physicsSystem->GetWorld();
     }
+
+
+    void showLoseScreen();
+    void showGameCompleteScreen();
+    void retryLevel();
+    void checkLevelCompletion();
+    void initializeLevels();
+    LevelManager& getLevelManager() { return *m_levelManager; }
+
 private:
     void createScene(SceneType scene);
     void update(float deltaTime);
-    void draw();  
+    void draw();
     void handleInput();
+    void checkGameOver();
+    void createLoseScreen();
+    void createGameCompleteScreen();
 
+    bool m_isLoseScreenActive;
+    bool m_isGameCompleteScreenActive;
+
+    LevelManager* m_levelManager;
     sf::RenderWindow m_window;
     SceneType m_currentScene;
-    RenderSystem* m_renderSystem;  
-    PhysicsSystem* m_physicsSystem; 
+    RenderSystem* m_renderSystem;
+    PhysicsSystem* m_physicsSystem;
     EventSystem* m_eventSystem;
     GameObject* m_bird;
 };

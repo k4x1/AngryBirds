@@ -27,7 +27,7 @@ void BirdLauncherComponent::update(float deltaTime)  {
  
     if (m_resetTimer->isRunning()) {
         m_resetTimer->update(deltaTime);
-        if (m_resetTimer->isFinished()) {
+        if (m_resetTimer->isFinished()&&m_thrownBirds<3) {
             resetLauncher();
         }
     }
@@ -35,7 +35,6 @@ void BirdLauncherComponent::update(float deltaTime)  {
         // Update bird position while dragging
         updateBirdPosition(sf::Vector2f(m_currentMousePos.x, m_currentMousePos.y));
     }
-
 
 }
 void BirdLauncherComponent::handleEvent(const sf::Event& event)  {
@@ -51,7 +50,7 @@ void BirdLauncherComponent::handleEvent(const sf::Event& event)  {
     }
 
     if (event.type == sf::Event::MouseButtonPressed) {
-        if (event.mouseButton.button == sf::Mouse::Left) {
+        if (event.mouseButton.button == sf::Mouse::Left &&!m_birdLaunched) {
             // Start dragging
             m_isDragging = true;
             m_dragStart = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
@@ -59,9 +58,21 @@ void BirdLauncherComponent::handleEvent(const sf::Event& event)  {
     }
     else if (event.type == sf::Event::MouseButtonReleased) {
         if (event.mouseButton.button == sf::Mouse::Left && m_isDragging) {
-            // Launch the bird
-            launchBird(sf::Vector2f(event.mouseButton.x, event.mouseButton.y));
-            m_isDragging = false;
+            auto transform = m_bird->getComponent<TransformComponent>();
+            if (transform) {
+                float distance = std::sqrt(
+                    std::pow(transform->position.x - m_launchPosition.x, 2) +
+                    std::pow(transform->position.y - m_launchPosition.y, 2)
+                );
+
+                if (distance > 50.0f) { 
+                    launchBird(sf::Vector2f(event.mouseButton.x, event.mouseButton.y));
+                 
+                }
+                
+            }
+                 m_isDragging = false;
+     
         }
     }
     else if (event.type == sf::Event::MouseMoved) {
@@ -72,7 +83,7 @@ void BirdLauncherComponent::handleEvent(const sf::Event& event)  {
 void BirdLauncherComponent::spawnBird() {
     std::cout << "BirdLauncherComponent::spawnBird() called" << std::endl;
     std::cout << "Spawning bird at position: " << m_spawnPosition.x << ", " << m_spawnPosition.y << std::endl;
-
+    m_birdLaunched = false;
     m_bird = m_createBirdFunction(m_spawnPosition, m_spritePath);
     if (!m_bird) {
         std::cout << "Error: Failed to create bird" << std::endl;
@@ -180,7 +191,7 @@ void BirdLauncherComponent::launchBird(const sf::Vector2f& releasePos) {
 
     // Calculate launch vector
     sf::Vector2f launchVector = m_anchorPosition - releasePos;
-    float launchForce = std::min(launchVector.x * launchVector.x + launchVector.y * launchVector.y, 500.0f); 
+    float launchForce = std::min(launchVector.x * launchVector.x + launchVector.y * launchVector.y, 250.0f); 
     // Normalize and apply force
     float length = std::sqrt(launchVector.x * launchVector.x + launchVector.y * launchVector.y);
     if (length > 0) {
@@ -198,10 +209,24 @@ void BirdLauncherComponent::launchBird(const sf::Vector2f& releasePos) {
         m_slingJoint = nullptr;
     }
     m_resetTimer->start();  
+    m_birdLaunched = true;
+    auto ability = m_bird->getComponent<AbilityComponent>();
+    if (ability) {
+        std::cout << "DoubleMassAbility found and onLaunch called" << std::endl;
+        ability->onLaunch();
+    }
+    else {
+        std::cout << "DoubleMassAbility not found on the bird" << std::endl;
+    }
+    m_thrownBirds++;
 }
 void BirdLauncherComponent::resetLauncher() {
     // Destroy the old bird
     if (m_bird) {
+        auto ability = m_bird->getComponent<AbilityComponent>();
+        if (ability) {
+            ability->reset();
+        }
         m_bird->destroy();
         m_bird = nullptr;
     }

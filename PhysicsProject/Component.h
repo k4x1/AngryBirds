@@ -115,11 +115,13 @@ public:
     b2Body* GetBody();
 
     float GetMass() const;
+    void SetMass(float mass);
+
+
     float GetGravityScale() const;
     float GetRestitution() const;
     float GetMaxSpeed() const;
 
-    void SetMass(float mass);
     void SetGravityScale(float scale);
     void SetRestitution(float restitution);
     void SetMaxSpeed(float maxSpeed);
@@ -366,8 +368,9 @@ public:
     void onCollision(GameObject* other) {
         auto rb = other->getComponent<RigidBodyComponent>();
         float speed = rb->getSpeed();   
+        float mass = rb->GetMass();   
     
-        m_damagePerCollision = (rb && speed > 3.0f) ? speed : 0;
+        m_damagePerCollision = (rb && speed > 3.0f) ? speed * mass : 0;
         
         m_currentHealth -= m_damagePerCollision;
         m_currentHealth = std::max(0.0f, m_currentHealth);
@@ -473,12 +476,144 @@ private:
     sf::Vector2f m_anchorPosition;
     std::unique_ptr<TimerComponent> m_resetTimer;
     sf::Vector2f m_currentMousePos;
-    float m_maxPullDistance = 250.0f;
+    float m_maxPullDistance = 200.0f;
+    bool m_birdLaunched;
+    int m_thrownBirds = 0;
 
 };
 
 class AbilityComponent : public Component {
 public:
-    bool m_launched;
+    AbilityComponent() : m_launched(false), m_clickedAfterLaunch(false) {}
 
+    virtual void update(float deltaTime) override {
+
+        if (m_launched && !m_clickedAfterLaunch) {
+            checkForClick();
+        }
+    }
+
+    virtual void onLaunch() {
+        m_launched = true;
+        m_clickedAfterLaunch = false;
+    }
+
+    virtual void onClickAfterLaunch() {
+        //Override for effect in inherited functions
+    }
+
+    bool isLaunched() const { return m_launched; }
+    bool hasClickedAfterLaunch() const { return m_clickedAfterLaunch; }
+
+    virtual void reset() {
+        m_launched = false;
+        m_clickedAfterLaunch = false;
+    }
+
+protected:
+    bool m_launched;
+    bool m_clickedAfterLaunch;
+
+private:
+    void checkForClick() {
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        std::cout << "click" << std::endl;
+            m_clickedAfterLaunch = true;
+            onClickAfterLaunch();
+        }
+    }
+};
+class DoubleMassAbility : public AbilityComponent {
+public:
+    DoubleMassAbility() : m_originalMass(0.0f) {}
+
+    void onLaunch() override {
+        AbilityComponent::onLaunch();
+
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (rigidBody) {
+            m_originalMass = rigidBody->GetMass();
+        }
+    }
+
+    void onClickAfterLaunch() override {
+        std::cout << "Double Mass ability activated!" << std::endl;
+
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (rigidBody) {
+            float newMass = rigidBody->GetMass() * 2.0f;
+            rigidBody->SetMass(newMass);
+            std::cout << "Mass increased from " << m_originalMass << " to " << newMass << std::endl;
+            auto transform = getOwner()->getComponent<TransformComponent>();
+            if (transform) {
+                transform->setScale(1.5f, 1.5f);
+            }
+        }
+        else {
+            std::cout << "Error: RigidBodyComponent not found" << std::endl;
+        }
+    }
+
+    void reset() override {
+        AbilityComponent::reset();
+
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (rigidBody && m_originalMass > 0.0f) {
+            rigidBody->SetMass(m_originalMass);
+            std::cout << "Mass reset to original value: " << m_originalMass << std::endl;
+        }
+    }
+
+private:
+    float m_originalMass;
+};
+class TextRendererComponent : public Component {
+public:
+    TextRendererComponent(const std::string& text) {
+        m_text.setString(text);
+        // Set up font, etc.
+    }
+
+    void setCharacterSize(unsigned int size) { m_text.setCharacterSize(size); }
+    void setFillColor(const sf::Color& color) { m_text.setFillColor(color); }
+
+    void draw(sf::RenderWindow& window) {
+        window.draw(m_text);
+    }
+
+private:
+    sf::Text m_text;
+    sf::Font m_font;
+};
+class ButtonComponent : public Component {
+public:
+    ButtonComponent(const std::string& text, std::function<void()> onClick)
+        : m_onClick(onClick) {
+        // Set up button appearance
+    }
+
+    void handleEvent(const sf::Event& event) override {
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (m_shape.getGlobalBounds().contains(event.mouseButton.x, event.mouseButton.y)) {
+                m_onClick();
+            }
+        }
+    }
+
+    void draw(sf::RenderWindow& window)  {
+        window.draw(m_shape);
+        window.draw(m_text);
+    }
+
+private:
+    sf::RectangleShape m_shape;
+    sf::Text m_text;
+    std::function<void()> m_onClick;
+};
+
+class PigComponent : public Component {
+public:
+    PigComponent() {}
+    virtual void update(float deltaTime) override {}
+    //this class is just to identify pigs easier to implement than tags for now
 };

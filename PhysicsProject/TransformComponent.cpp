@@ -17,9 +17,13 @@ void TransformComponent::setRotation(float angle) {
 void TransformComponent::setScale(float scaleX, float scaleY) {
     scale = sf::Vector2f(scaleX, scaleY);
     updateBox2DBody();
-}
+    auto box = getOwner()->getComponent<BoxColliderComponent>();
+    if (box) {
+        box->init();
+    }
+    }
 
-void TransformComponent::updateBox2DBody() {
+    void TransformComponent::updateBox2DBody() {
     if (!rigidBody) {
         rigidBody = getOwner()->getComponent<RigidBodyComponent>();
     }

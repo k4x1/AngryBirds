@@ -111,6 +111,7 @@ void RigidBodyComponent::setVelocity(const sf::Vector2f& velocity) {
     }
 }
 
+
 sf::Vector2f RigidBodyComponent::getVelocity() const {
     if (m_body) {
         b2Vec2 vel = m_body->GetLinearVelocity();

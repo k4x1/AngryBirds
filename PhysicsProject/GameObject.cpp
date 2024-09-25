@@ -99,25 +99,7 @@ bool GameObject::isDestroyed() const {
 std::string GameObject::getName()
 {
     return "Name is bugged so this is all you get";
-/*    if (this == nullptr) {
-        std::cout << "Error: getName() called on null object" << std::endl;
-        return "Null Object";
-    }
 
-    try {
-        if (m_name.empty()) {
-            return "Unnamed Object";
-        }
-        return m_name;
-    }
-    catch (const std::exception& e) {
-        std::cout << "Exception in getName(): " << e.what() << std::endl;
-        return "Error in getName()";
-    }
-    catch (...) {
-        std::cout << "Unknown exception in getName()" << std::endl;
-        return "Error in getName()";
-    }*/
 }
 
 GameObject::GameObject(const sf::Vector2f& position) : m_position(position), m_isDestroyed(false) {}

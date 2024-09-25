@@ -2,13 +2,17 @@
 #include "ComponentManager.h"
 #include "Systems.h"
 #include "EventSystem.h"
+#include "LevelManager.h"
 #include <algorithm>
 
 Game::Game()
     : m_window(sf::VideoMode(800, 600), "GameObject Game"),
     m_currentScene(SceneType::MAIN_MENU),
-    m_bird(nullptr) {
-
+    m_isLoseScreenActive(false),
+    m_isGameCompleteScreenActive(false),
+    m_bird(nullptr)
+{   
+    m_levelManager = new LevelManager(this);
     m_window.setFramerateLimit(60);
     m_renderSystem = new RenderSystem();
     m_physicsSystem = new PhysicsSystem();
@@ -16,10 +20,11 @@ Game::Game()
 }
 
 Game::~Game() {
+    delete m_levelManager;
     delete m_renderSystem;
     delete m_physicsSystem;
-
 }
+
 
 void Game::run() {
     sf::Clock clock;
@@ -41,6 +46,8 @@ void Game::createScene(SceneType scene) {
     for (auto& object : GameObject::getAllObjects()) {
         object->destroy();
     }
+    m_isLoseScreenActive = false;
+    m_isGameCompleteScreenActive = false;
 
     const std::vector<std::string> spritePaths = {
         "Sprites/chick",
@@ -55,30 +62,26 @@ void Game::createScene(SceneType scene) {
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
          bird->addComponent<BoxColliderComponent>(1.0f,1.0f);
+         bird->addComponent<DoubleMassAbility>();
   
         return  bird;
         };
     auto createPig= [&](const sf::Vector2f& position, const std::string& spritePath  = "Sprites/dannyInRealLife") {
-        std::cout << "Creating pig at position: " << position.x << ", " << position.y << std::endl;
-        auto pig = GameObject::create(position, "pig");
-        std::cout << "Pig created with name: " << pig->getName() << std::endl;
 
-        std::cout << "Adding TransformComponent to pig" << std::endl;
+        auto pig = GameObject::create(position, "pig");
+
         auto transform = pig->addComponent<TransformComponent>(position.x, position.y);
         transform->setScale(1.5, 1.5);
 
-        std::cout << "Adding SpriteRendererComponent to pig" << std::endl;
         pig->addComponent<SpriteRendererComponent>(spritePath + ".png");
 
-        std::cout << "Adding RigidBodyComponent to pig" << std::endl;
         pig->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
 
-        std::cout << "Adding CircleColliderComponent to pig" << std::endl;
         pig->addComponent<CircleColliderComponent>(1.0f, sf::Vector2f(46, 48));
 
-        std::cout << "Adding BreakableComponent to pig" << std::endl;
         pig->addComponent<BreakableComponent>(20);
 
+        pig->addComponent<PigComponent>();
         std::cout << "Pig creation completed" << std::endl;
         return pig;
         };
@@ -116,7 +119,7 @@ void Game::createScene(SceneType scene) {
 
 
         createPig(sf::Vector2f(233, 233));
-        auto fallingObject = createBird(sf::Vector2f(400, 0), spritePaths[1]);
+   
     }
     break;
     case SceneType::LEVEL_2:
@@ -194,6 +197,10 @@ void Game::update(float deltaTime) {
             transform->position.x += 1.0f * deltaTime;
         }
     }
+
+    if (!m_isLoseScreenActive && !m_isGameCompleteScreenActive) {
+        checkLevelCompletion();
+    }
 }
 
 void Game::draw() {
@@ -231,5 +238,94 @@ void Game::handleInput() {
                 break;
             }
         }
+    }
+}
+void Game::showLoseScreen() {
+    m_isLoseScreenActive = true;
+    createLoseScreen();
+}
+
+void Game::showGameCompleteScreen() {
+    m_isGameCompleteScreenActive = true;
+    createGameCompleteScreen();
+}
+
+void Game::retryLevel() {
+    m_isLoseScreenActive = false;
+    m_levelManager->retryCurrentLevel();
+}
+
+void Game::checkLevelCompletion() {
+    int pigCount = 0;
+    for (auto& object : GameObject::getAllObjects()) {
+        if (object->getComponent<PigComponent>()) {
+            pigCount++;
+        }
+    }
+
+    if (pigCount == 0) {
+        m_levelManager->nextLevel();
+    }
+}
+
+void Game::initializeLevels() {
+    m_levelManager->addLevel([this](Game* game) {
+        this->createScene(SceneType::LEVEL_1);
+        });
+
+    m_levelManager->addLevel([this](Game* game) {
+        this->createScene(SceneType::LEVEL_2);
+        });
+
+    m_levelManager->addLevel([this](Game* game) {
+        this->createScene(SceneType::BOSS_FIGHT);
+        });
+
+    m_levelManager->nextLevel(); // start the first level
+}
+
+void Game::createLoseScreen() {
+    // Clear existing objects
+    for (auto& object : GameObject::getAllObjects()) {
+        object->destroy();
+    }
+
+    // Create "You Lose" text
+    auto loseText = GameObject::create(sf::Vector2f(400, 200), "loseText");
+    auto textRenderer = loseText->addComponent<TextRendererComponent>("You Lose!");
+    textRenderer->setCharacterSize(48);
+    textRenderer->setFillColor(sf::Color::Red);
+
+    // Create retry button
+    auto retryButton = GameObject::create(sf::Vector2f(400, 300), "retryButton");
+    auto buttonRenderer = retryButton->addComponent<ButtonComponent>("Retry", [this]() { this->retryLevel(); });
+}
+
+void Game::createGameCompleteScreen() {
+    // Clear existing objects
+    for (auto& object : GameObject::getAllObjects()) {
+        object->destroy();
+    }
+
+    // Create "Game Complete" text
+    auto completeText = GameObject::create(sf::Vector2f(400, 200), "completeText");
+    auto textRenderer = completeText->addComponent<TextRendererComponent>("Game Complete!");
+    textRenderer->setCharacterSize(48);
+    textRenderer->setFillColor(sf::Color::Green);
+}
+void Game::checkGameOver() {
+    bool hasBirds = false;
+    bool hasLauncher = false;
+    for (auto& object : GameObject::getAllObjects()) {
+        if (object->getComponent<AbilityComponent>()) {
+            hasBirds = true;
+        }
+        if (object->getComponent<BirdLauncherComponent>()) {
+            hasLauncher = true;
+        }
+    }
+
+    if (!hasBirds && !hasLauncher) {
+        showLoseScreen();
     }
 }
