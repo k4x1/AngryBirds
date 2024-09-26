@@ -6,7 +6,7 @@
 #include <algorithm>
 
 Game::Game()
-    : m_window(sf::VideoMode(800, 600), "GameObject Game"),
+    : m_window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "GameObject Game"),
     m_currentScene(SceneType::MAIN_MENU),
     m_isLoseScreenActive(false),
     m_isGameCompleteScreenActive(false),
@@ -17,6 +17,7 @@ Game::Game()
     m_renderSystem = new RenderSystem();
     m_physicsSystem = new PhysicsSystem();
     m_eventSystem = &EventSystem::getInstance();
+    initializeLevels();
 }
 
 Game::~Game() {
@@ -41,10 +42,13 @@ void Game::run() {
     }
 }
 void Game::createScene(SceneType scene) {
-    m_currentScene = scene;
 
+
+    m_currentScene = scene;
+    
     for (auto& object : GameObject::getAllObjects()) {
         object->destroy();
+        std::cout << object << std::endl;
     }
     m_isLoseScreenActive = false;
     m_isGameCompleteScreenActive = false;
@@ -71,13 +75,13 @@ void Game::createScene(SceneType scene) {
         auto pig = GameObject::create(position, "pig");
 
         auto transform = pig->addComponent<TransformComponent>(position.x, position.y);
-        transform->setScale(1.5, 1.5);
+        transform->setScale(1.0f, 1.0f);
 
         pig->addComponent<SpriteRendererComponent>(spritePath + ".png");
 
         pig->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
 
-        pig->addComponent<CircleColliderComponent>(1.0f, sf::Vector2f(46, 48));
+        pig->addComponent<CircleColliderComponent>(1.0f, sf::Vector2f(30, 35));
 
         pig->addComponent<BreakableComponent>(20);
 
@@ -96,6 +100,14 @@ void Game::createScene(SceneType scene) {
         return plat;
         };
 
+    auto createLauncher = [&](const float x, const float y) {
+        auto position = sf::Vector2f(x, y);
+        auto launcher = GameObject::create(position, "launcher");
+        launcher->addComponent<TransformComponent>(x, y);
+        launcher->addComponent<RenderComponent>(sf::Color::Red);
+        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), position, createBird, spritePaths[2]);
+        };
+
 
     switch (scene) {
     case SceneType::MAIN_MENU:
@@ -110,41 +122,23 @@ void Game::createScene(SceneType scene) {
     break;
     case SceneType::LEVEL_1:
     {
+      
+        createLauncher(200, 500);
 
-        auto launcher = GameObject::create(sf::Vector2f(300, 300), "launcher");
-        launcher->addComponent<TransformComponent>(300, 300);
-        launcher->addComponent<RenderComponent>(sf::Color::Red);
-        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), sf::Vector2f(300, 300), createBird, spritePaths[2]);
-
-
-
-        createPig(sf::Vector2f(233, 233));
+        createPig(sf::Vector2f(633, 500));
    
     }
     break;
     case SceneType::LEVEL_2:
     {
-        for (int i = 0; i < 5; ++i) {
-            createBird(sf::Vector2f(100 + i * 150, 100 + (i % 2) * 100), spritePaths[i % 3]);
-        }
+        createLauncher(200, 500);
+        createPig(sf::Vector2f(633, 500));
     }
     break;
     case SceneType::BOSS_FIGHT:
     {
-        auto boss = createBird(sf::Vector2f(400, 300), spritePaths[2]);
-        boss->getComponent<TransformComponent>()->scale = sf::Vector2f(2.0f,2.0f);
-        boss->addComponent<FollowMouseComponent>(&m_window);
-      
-
-        for (int i = 0; i < 4; ++i) {
-            createBird(sf::Vector2f(100 + i * 200, 500), spritePaths[i % 2]);
-        }
-    }
-    break;
-    case SceneType::GAME_OVER:
-    {
-        auto gameOverObject = createBird(sf::Vector2f(375, 275), spritePaths[1]);
-
+        createLauncher(200, 500);
+        createPig(sf::Vector2f(633, 500));
     }
     break;
     }
@@ -155,11 +149,8 @@ void Game::createScene(SceneType scene) {
             continue;
         }
 
-        std::cout << "Starting object at index " << i << std::endl;
         try {
-            std::cout << "Object name: " << gameObject->getName() << std::endl;
-            gameObject->start();
-            std::cout << "Started object: " << gameObject->getName() << std::endl;
+            gameObject->start();         
         }
         catch (const std::exception& e) {
             std::cout << "Exception caught while starting object at index " << i << ": " << e.what() << std::endl;
@@ -176,7 +167,7 @@ void Game::createScene(SceneType scene) {
 void Game::update(float deltaTime) {
     m_physicsSystem->update(deltaTime);
  
-
+    checkGameOver();
     auto& objects = GameObject::getAllObjects();
     for (auto& gameObject : objects) {
         gameObject->update(deltaTime);
@@ -233,9 +224,6 @@ void Game::handleInput() {
             case sf::Keyboard::Num4:
                 createScene(SceneType::BOSS_FIGHT);
                 break;
-            case sf::Keyboard::Num5:
-                createScene(SceneType::GAME_OVER);
-                break;
             }
         }
     }
@@ -264,25 +252,24 @@ void Game::checkLevelCompletion() {
     }
 
     if (pigCount == 0) {
-        m_levelManager->nextLevel();
+        if (m_levelManager->isLastLevel()) {
+            showGameCompleteScreen();
+        }
+        else {
+            m_levelManager->nextLevel();
+        }
     }
 }
 
+
 void Game::initializeLevels() {
-    m_levelManager->addLevel([this](Game* game) {
-        this->createScene(SceneType::LEVEL_1);
-        });
+    m_levelManager->addLevel(SceneType::LEVEL_1);
+    m_levelManager->addLevel(SceneType::LEVEL_2);
+    m_levelManager->addLevel(SceneType::BOSS_FIGHT);
 
-    m_levelManager->addLevel([this](Game* game) {
-        this->createScene(SceneType::LEVEL_2);
-        });
-
-    m_levelManager->addLevel([this](Game* game) {
-        this->createScene(SceneType::BOSS_FIGHT);
-        });
-
-    m_levelManager->nextLevel(); // start the first level
+    m_levelManager->nextLevel();
 }
+
 
 void Game::createLoseScreen() {
     // Clear existing objects
@@ -320,12 +307,11 @@ void Game::checkGameOver() {
         if (object->getComponent<AbilityComponent>()) {
             hasBirds = true;
         }
-        if (object->getComponent<BirdLauncherComponent>()) {
-            hasLauncher = true;
-        }
+     
     }
 
-    if (!hasBirds && !hasLauncher) {
+  
+    if (!hasBirds) {
         showLoseScreen();
     }
 }

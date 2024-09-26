@@ -13,7 +13,9 @@ class GameObject;
 class TransformComponent;
 class RigidBodyComponent;
 class BoxColliderComponent;
-
+const float SCREEN_WIDTH = 800.0f;
+const float SCREEN_HEIGHT = 600.0f;
+const float PIXELS_PER_METER = 30.0f;
 class RenderSystem {
 public:
     void update(sf::RenderWindow& window);
@@ -26,6 +28,7 @@ public:
     Box2DWorld* GetWorld() { return &m_world; }
 
 private:
+    void createWall(float x1, float y1, float x2, float y2);
     Box2DWorld m_world;
     b2Body* m_groundBody;
 };

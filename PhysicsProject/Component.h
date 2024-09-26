@@ -450,7 +450,7 @@ public:
     using BirdCreationFunction = std::function<GameObject* (const sf::Vector2f&, const std::string&)>;
 
     BirdLauncherComponent(sf::RenderWindow* window, Box2DWorld* world, const sf::Vector2f& spawnPosition, BirdCreationFunction createBirdFunction, const std::string& spritePath);
-
+    ~BirdLauncherComponent();
     void start() override;
     void update(float deltaTime) override;
     void handleEvent(const sf::Event& event) override;
@@ -476,7 +476,7 @@ private:
     sf::Vector2f m_anchorPosition;
     std::unique_ptr<TimerComponent> m_resetTimer;
     sf::Vector2f m_currentMousePos;
-    float m_maxPullDistance = 200.0f;
+    float m_maxPullDistance = 100.0f;
     bool m_birdLaunched;
     int m_thrownBirds = 0;
 
@@ -546,7 +546,7 @@ public:
             std::cout << "Mass increased from " << m_originalMass << " to " << newMass << std::endl;
             auto transform = getOwner()->getComponent<TransformComponent>();
             if (transform) {
-                transform->setScale(1.5f, 1.5f);
+                transform->setScale(0.5f, 0.5f);
             }
         }
         else {
@@ -569,47 +569,138 @@ private:
 };
 class TextRendererComponent : public Component {
 public:
-    TextRendererComponent(const std::string& text) {
-        m_text.setString(text);
-        // Set up font, etc.
+    TextRendererComponent(const std::string& text) : m_text(text) {
+        if (!m_font.loadFromFile("path/to/your/font.ttf")) {
+            std::cout << "Error loading font" << std::endl;
+        }
+        m_sfText.setFont(m_font);
+        m_sfText.setString(m_text);
+        m_sfText.setCharacterSize(24); // Default size
+        m_sfText.setFillColor(sf::Color::White); // Default color
     }
 
-    void setCharacterSize(unsigned int size) { m_text.setCharacterSize(size); }
-    void setFillColor(const sf::Color& color) { m_text.setFillColor(color); }
+    void setText(const std::string& text) {
+        m_text = text;
+        m_sfText.setString(m_text);
+    }
+
+    void setCharacterSize(unsigned int size) {
+        m_sfText.setCharacterSize(size);
+    }
+
+    void setFillColor(const sf::Color& color) {
+        m_sfText.setFillColor(color);
+    }
+
+    void setFont(const sf::Font& font) {
+        m_sfText.setFont(font);
+    }
+
+    void setOrigin(TextOrigin origin) {
+        sf::FloatRect bounds = m_sfText.getLocalBounds();
+        switch (origin) {
+        case TextOrigin::Center:
+            m_sfText.setOrigin(bounds.width / 2, bounds.height / 2);
+            break;
+        case TextOrigin::TopLeft:
+            m_sfText.setOrigin(0, 0);
+            break;
+            // Add other origin options as needed
+        }
+    }
+
+    void update(float deltaTime) override {
+        auto transform = getOwner()->getComponent<TransformComponent>();
+        if (transform) {
+            m_sfText.setPosition(transform->position);
+            m_sfText.setRotation(transform->rotation);
+        }
+    }
 
     void draw(sf::RenderWindow& window) {
-        window.draw(m_text);
+        window.draw(m_sfText);
     }
 
 private:
-    sf::Text m_text;
+    std::string m_text;
+    sf::Text m_sfText;
     sf::Font m_font;
 };
+
 class ButtonComponent : public Component {
 public:
     ButtonComponent(const std::string& text, std::function<void()> onClick)
-        : m_onClick(onClick) {
-        // Set up button appearance
+        : m_text(text), m_onClick(onClick) {
+        if (!m_font.loadFromFile("path/to/your/font.ttf")) {
+            std::cout << "Error loading font" << std::endl;
+        }
+        m_sfText.setFont(m_font);
+        m_sfText.setString(m_text);
+        m_sfText.setCharacterSize(24); // Default size
+        m_sfText.setFillColor(sf::Color::Black); // Default text color
+
+        m_shape.setSize(sf::Vector2f(200, 50)); // Default button size
+        m_shape.setFillColor(sf::Color(200, 200, 200)); // Default button color
+    }
+
+    void setFont(const sf::Font& font) {
+        m_sfText.setFont(font);
+    }
+
+    void setButtonColor(const sf::Color& color) {
+        m_shape.setFillColor(color);
+    }
+
+    void setTextColor(const sf::Color& color) {
+        m_sfText.setFillColor(color);
+    }
+
+    void setButtonSize(const sf::Vector2f& size) {
+        m_shape.setSize(size);
+        m_shape.setOrigin(size.x / 2, size.y / 2);
+    }
+
+    void update(float deltaTime) override {
+        auto transform = getOwner()->getComponent<TransformComponent>();
+        if (transform) {
+            m_shape.setPosition(transform->position);
+            m_shape.setRotation(transform->rotation);
+
+            // Center the text in the button
+            sf::FloatRect textBounds = m_sfText.getLocalBounds();
+            m_sfText.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
+            m_sfText.setPosition(transform->position);
+        }
     }
 
     void handleEvent(const sf::Event& event) override {
         if (event.type == sf::Event::MouseButtonPressed) {
-            if (m_shape.getGlobalBounds().contains(event.mouseButton.x, event.mouseButton.y)) {
+            sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
+            if (m_shape.getGlobalBounds().contains(mousePos)) {
                 m_onClick();
             }
         }
     }
 
-    void draw(sf::RenderWindow& window)  {
+    void draw(sf::RenderWindow& window) {
         window.draw(m_shape);
-        window.draw(m_text);
+        window.draw(m_sfText);
     }
 
 private:
+    std::string m_text;
+    sf::Text m_sfText;
+    sf::Font m_font;
     sf::RectangleShape m_shape;
-    sf::Text m_text;
     std::function<void()> m_onClick;
 };
+
+enum class TextOrigin {
+    Center,
+    TopLeft,
+    // Add other origin options as needed
+};
+
 
 class PigComponent : public Component {
 public:

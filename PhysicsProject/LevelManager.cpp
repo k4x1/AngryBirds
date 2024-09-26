@@ -1,15 +1,18 @@
 #include "LevelManager.h"
 #include "Game.h"
+
 LevelManager::LevelManager(Game* game) : m_game(game), m_currentLevelIndex(-1) {}
 
-void LevelManager::startCurrentLevel() {
-    if (m_currentLevelIndex >= 0 && m_currentLevelIndex < m_levels.size()) {
-        m_levels[m_currentLevelIndex](m_game);
-    }
+void LevelManager::addLevel(SceneType sceneType) {
+    m_levels.push_back(sceneType);
+    std::cout << "Level added. Total levels: " << m_levels.size() << std::endl;
 }
 
-void LevelManager::addLevel(LevelSetupFunction setupFunc) {
-    m_levels.push_back(setupFunc);
+void LevelManager::startCurrentLevel() {
+   
+    if (m_currentLevelIndex >= 0 && m_currentLevelIndex < m_levels.size()) {
+        m_game->createScene(m_levels[m_currentLevelIndex]);
+    }
 }
 
 
@@ -19,7 +22,6 @@ void LevelManager::nextLevel() {
         startCurrentLevel();
     }
     else {
-        // Handle game completion
         m_game->showGameCompleteScreen();
     }
 }

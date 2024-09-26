@@ -6,6 +6,8 @@
 
 
 
+
+
 void RenderSystem::update(sf::RenderWindow& window) {
     for (auto& gameObject : GameObject::getAllObjects()) {
         auto transform = gameObject->getComponent<TransformComponent>();
@@ -48,11 +50,21 @@ PhysicsSystem::PhysicsSystem() {
     groundBodyDef.position.Set(0.0f, 20.0f);
     m_groundBody = m_world.CreateBody(&groundBodyDef);
 
-    b2EdgeShape groundShape;
-    groundShape.SetTwoSided(b2Vec2(-40.0f, 0.0f), b2Vec2(40.0f, 0.0f));
-    m_groundBody->CreateFixture(&groundShape, 0.0f);
+    // Create walls
+    createWall(0, 0, 0, SCREEN_HEIGHT / PIXELS_PER_METER);  // Left wall
+    createWall(SCREEN_WIDTH / PIXELS_PER_METER, 0, SCREEN_WIDTH / PIXELS_PER_METER, SCREEN_HEIGHT / PIXELS_PER_METER);  // Right wall
+    createWall(0, 0, SCREEN_WIDTH / PIXELS_PER_METER, 0);  // Top wall
+    createWall(0, SCREEN_HEIGHT / PIXELS_PER_METER, SCREEN_WIDTH / PIXELS_PER_METER, SCREEN_HEIGHT / PIXELS_PER_METER);  // Bottom wall
 }
+void PhysicsSystem::createWall(float x1, float y1, float x2, float y2) {
+    b2BodyDef wallBodyDef;
+    wallBodyDef.position.Set(0, 0);
+    b2Body* wallBody = m_world.CreateBody(&wallBodyDef);
 
+    b2EdgeShape wallShape;
+    wallShape.SetTwoSided(b2Vec2(x1, y1), b2Vec2(x2, y2));
+    wallBody->CreateFixture(&wallShape, 0.0f);
+}
 void PhysicsSystem::update(float deltaTime) {
     m_world.Step(deltaTime, 6, 2);
 

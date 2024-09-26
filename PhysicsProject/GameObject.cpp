@@ -42,20 +42,18 @@ const sf::Vector2f& GameObject::getPosition() const {
 }
 
 void GameObject::start() {
-    std::cout << "Starting components for: " << (m_name.empty() ? "Unnamed Object" : m_name) << std::endl;
     auto& componentManager = ComponentManager::getInstance();
     auto components = componentManager.getAllComponents(this);
-    std::cout << "Number of components: " << components.size() << std::endl;
+
     for (auto& component : components) {
         if (component == nullptr) {
             std::cout << "Error: Null component encountered" << std::endl;
             continue;
-        }
-        std::cout << "Starting component: " << typeid(*component).name() << std::endl;
+        }       
         component->start();
-        std::cout << "Started component: " << typeid(*component).name() << std::endl;
+
     }
-    std::cout << "Finished starting components for: " << (m_name.empty() ? "Unnamed Object" : m_name) << std::endl;
+   
 }
 
 
@@ -98,7 +96,8 @@ bool GameObject::isDestroyed() const {
 
 std::string GameObject::getName()
 {
-    return "Name is bugged so this is all you get";
+    if (m_name == "") return "No name";
+    return m_name;
 
 }
 

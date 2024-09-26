@@ -3,10 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include "GameObject.h"
 #include "LevelManager.h"
-class Box2DWorld; 
-class RenderSystem;
-class PhysicsSystem;
-class EventSystem;
+
 enum class SceneType {
     MAIN_MENU,
     LEVEL_1,
@@ -14,6 +11,11 @@ enum class SceneType {
     BOSS_FIGHT,
     GAME_OVER
 };
+
+class Box2DWorld;
+class RenderSystem;
+class PhysicsSystem;
+class EventSystem;
 
 class Game {
 public:
@@ -28,21 +30,21 @@ public:
         return m_physicsSystem->GetWorld();
     }
 
-
     void showLoseScreen();
     void showGameCompleteScreen();
     void retryLevel();
     void checkLevelCompletion();
     void initializeLevels();
     LevelManager& getLevelManager() { return *m_levelManager; }
+    void createScene(SceneType scene);
 
 private:
-    void createScene(SceneType scene);
     void update(float deltaTime);
     void draw();
     void handleInput();
     void checkGameOver();
     void createLoseScreen();
+    void destroyLoseScreen();
     void createGameCompleteScreen();
 
     bool m_isLoseScreenActive;
@@ -55,4 +57,9 @@ private:
     PhysicsSystem* m_physicsSystem;
     EventSystem* m_eventSystem;
     GameObject* m_bird;
+
+ 
+    sf::Font m_font;
+    GameObject* m_loseTextObject;
+    GameObject* m_retryButtonObject;
 };

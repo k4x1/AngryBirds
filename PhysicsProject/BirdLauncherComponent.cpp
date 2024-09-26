@@ -11,6 +11,19 @@ BirdLauncherComponent::BirdLauncherComponent(sf::RenderWindow* window, Box2DWorl
 
     }
 
+BirdLauncherComponent::~BirdLauncherComponent()
+{
+    if (m_bird) {
+        auto ability = m_bird->getComponent<AbilityComponent>();
+        if (ability) {
+            ability->reset();
+        }
+        m_bird->destroy();
+        m_bird = nullptr;
+    }
+
+}
+
 void BirdLauncherComponent::start() {
     std::cout << "BirdLauncherComponent::start() called" << std::endl;
     spawnBird();
@@ -27,7 +40,8 @@ void BirdLauncherComponent::update(float deltaTime)  {
  
     if (m_resetTimer->isRunning()) {
         m_resetTimer->update(deltaTime);
-        if (m_resetTimer->isFinished()&&m_thrownBirds<3) {
+        if (m_resetTimer->isFinished()) {
+        
             resetLauncher();
         }
     }
@@ -191,7 +205,7 @@ void BirdLauncherComponent::launchBird(const sf::Vector2f& releasePos) {
 
     // Calculate launch vector
     sf::Vector2f launchVector = m_anchorPosition - releasePos;
-    float launchForce = std::min(launchVector.x * launchVector.x + launchVector.y * launchVector.y, 250.0f); 
+    float launchForce = std::min(launchVector.x * launchVector.x + launchVector.y * launchVector.y, 100.0f); 
     // Normalize and apply force
     float length = std::sqrt(launchVector.x * launchVector.x + launchVector.y * launchVector.y);
     if (length > 0) {
@@ -230,10 +244,11 @@ void BirdLauncherComponent::resetLauncher() {
         m_bird->destroy();
         m_bird = nullptr;
     }
-
-    // Spawn a new bird
-    spawnBird();
-    m_resetTimer->reset();
+    if (m_thrownBirds < 3) {
+        // Spawn a new bird
+        spawnBird();
+        m_resetTimer->reset();
+    }
 }
 
 void BirdLauncherComponent::drawRope(sf::RenderWindow& window)

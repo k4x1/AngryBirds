@@ -1,14 +1,14 @@
 #pragma once
 #include <vector>
-#include <functional>
 
+// forward declarations fixes things
 class Game;
+enum class SceneType;
+
 class LevelManager {
 public:
-    using LevelSetupFunction = std::function<void(Game*)>;
-
     LevelManager(Game* game);
-    void addLevel(LevelSetupFunction setupFunc);
+    void addLevel(SceneType sceneType);
     void startCurrentLevel();
     void nextLevel();
     void retryCurrentLevel();
@@ -17,6 +17,6 @@ public:
 
 private:
     Game* m_game;
-    std::vector<LevelSetupFunction> m_levels;
+    std::vector<SceneType> m_levels;
     int m_currentLevelIndex;
 };

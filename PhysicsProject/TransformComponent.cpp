@@ -2,7 +2,7 @@
 #include "Component.h"
 #include "Box2d/box2d.h"
 
-TransformComponent::TransformComponent(float x, float y) : position(x, y), scale(0.5f, 0.5f), rotation(0.0f), rigidBody(nullptr) {}
+TransformComponent::TransformComponent(float x, float y) : position(x, y), scale(0.25f, 0.25f), rotation(0.0f), rigidBody(nullptr) {}
 
 void TransformComponent::setPosition(float x, float y) {
     position = sf::Vector2f(x, y);
