@@ -108,7 +108,9 @@ void RigidBodyComponent::applyImpulse(const sf::Vector2f& impulse) {
 void RigidBodyComponent::setVelocity(const sf::Vector2f& velocity) {
     if (m_body) {
         m_body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
+        return;
     }
+    std::cout << "No body found" << std::endl;
 }
 
 
@@ -165,6 +167,11 @@ void RigidBodyComponent::SetMass(float mass) {
         massData.mass = mass;
         m_body->SetMassData(&massData);
     }
+}
+
+Box2DWorld* RigidBodyComponent::GetWorld()
+{
+    return m_world;
 }
 
 void RigidBodyComponent::SetGravityScale(float scale) {

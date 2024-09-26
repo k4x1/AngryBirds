@@ -116,7 +116,7 @@ public:
 
     float GetMass() const;
     void SetMass(float mass);
-
+    Box2DWorld* GetWorld();
 
     float GetGravityScale() const;
     float GetRestitution() const;
@@ -139,6 +139,7 @@ class SpriteRendererComponent : public Component {
 public:
     virtual void start() {}
     SpriteRendererComponent(const std::string& texturePath) {
+        m_spritePath = texturePath;
         if (!m_texture.loadFromFile(texturePath)) {
             throw std::runtime_error("Failed to load texture: " + texturePath);
         }
@@ -164,13 +165,16 @@ public:
     void setTint(const sf::Color& color) {
         m_sprite.setColor(color);
     }
+    std::string getSpritePath() {
+        return m_spritePath;
+    }
 private:
     void updateScale() {
         float scaleX = m_desiredSize.x / m_originalSize.x;
         float scaleY = m_desiredSize.y / m_originalSize.y;
         m_sprite.setScale(scaleX, scaleY);
     }
-
+    std::string m_spritePath;
     sf::Texture m_texture;
     sf::Sprite m_sprite;
     sf::Vector2u m_originalSize;
@@ -567,10 +571,121 @@ public:
 private:
     float m_originalMass;
 };
+class BoostAbility : public AbilityComponent {
+public:
+    BoostAbility(float boostFactor = 2.0f) : m_boostFactor(boostFactor) {}
+
+    void onLaunch() override {
+        AbilityComponent::onLaunch();
+    }
+
+    void onClickAfterLaunch() override {
+        std::cout << "Boost ability activated!" << std::endl;
+
+        auto rigidBody = getOwner()->getComponent<RigidBodyComponent>();
+        if (rigidBody) {
+            sf::Vector2f currentVelocity = rigidBody->getVelocity();
+            sf::Vector2f boostedVelocity = currentVelocity * m_boostFactor;
+            rigidBody->setVelocity(boostedVelocity);
+            std::cout << "Velocity increased from (" << currentVelocity.x << ", " << currentVelocity.y
+                << ") to (" << boostedVelocity.x << ", " << boostedVelocity.y << ")" << std::endl;
+        }
+        else {
+            std::cout << "Error: RigidBodyComponent not found" << std::endl;
+        }
+    }
+
+    void reset() override {
+        AbilityComponent::reset();
+    }
+
+private:
+    float m_boostFactor;
+};
+class SplitAbility : public AbilityComponent {
+public:
+    SplitAbility(int splitCount = 3) : m_splitCount(splitCount) {}
+
+    ~SplitAbility() {
+        destroySplitBirds();
+    }
+
+    void onLaunch() override {
+        AbilityComponent::onLaunch();
+    }
+
+    void onClickAfterLaunch() override {
+        std::cout << "Split ability activated!" << std::endl;
+
+        auto originalTransform = getOwner()->getComponent<TransformComponent>();
+        auto originalRigidBody = getOwner()->getComponent<RigidBodyComponent>();
+
+        if (originalTransform && originalRigidBody) {
+            sf::Vector2f originalPosition = originalTransform->position;
+            sf::Vector2f originalVelocity = originalRigidBody->getVelocity();
+
+            for (int i = 0; i < m_splitCount - 1; ++i) {  // -1 because we already have the original
+                auto newBird = GameObject::create(originalPosition, "SplitBird");
+
+                // Copy components from the original bird
+                newBird->addComponent<TransformComponent>(originalPosition.x, originalPosition.y + (i * 10));
+                newBird->addComponent<SpriteRendererComponent>(getOwner()->getComponent<SpriteRendererComponent>()->getSpritePath());
+                auto newRigidBody = newBird->addComponent<RigidBodyComponent>(originalRigidBody->GetWorld(), originalRigidBody->GetMass(), originalRigidBody->GetGravityScale());
+                newBird->addComponent<BoxColliderComponent>(1.0f, 1.0f);  // Assuming original bird size
+
+                newRigidBody->init();
+                // Set slightly different velocity for each split bird
+                float angleOffset = (i + 1) * 60.0f;  // degrees
+                sf::Vector2f newVelocity = rotateVector(originalVelocity, angleOffset);
+                newRigidBody->setVelocity(originalVelocity);
+
+                m_splitBirds.push_back(newBird);
+
+                std::cout << "Created split bird " << i + 1 << " at position (" << originalPosition.x << ", " << originalPosition.y << ")" << std::endl;
+            }
+        }
+        else {
+            std::cout << "Error: Required components not found" << std::endl;
+        }
+    }
+
+    void reset() override {
+        AbilityComponent::reset();
+        destroySplitBirds();
+    }
+
+private:
+    int m_splitCount;
+    std::vector<GameObject*> m_splitBirds;
+
+    sf::Vector2f rotateVector(const sf::Vector2f& vector, float angleDegrees) {
+        float angleRadians = angleDegrees * 3.14159f / 180.0f;
+        float cs = std::cos(angleRadians);
+        float sn = std::sin(angleRadians);
+        return sf::Vector2f(vector.x * cs - vector.y * sn, vector.x * sn + vector.y * cs);
+    }
+
+    void destroySplitBirds() {
+        for (auto bird : m_splitBirds) {
+            if (bird) {
+                bird->destroy();
+            }
+        }
+        m_splitBirds.clear();
+        std::cout << "All split birds destroyed" << std::endl;
+    }
+};
+
+
+enum class TextOrigin {
+    Center,
+    TopLeft,
+};
+
 class TextRendererComponent : public Component {
 public:
     TextRendererComponent(const std::string& text) : m_text(text) {
-        if (!m_font.loadFromFile("path/to/your/font.ttf")) {
+        if (!m_font.loadFromFile("font.ttf")) {
             std::cout << "Error loading font" << std::endl;
         }
         m_sfText.setFont(m_font);
@@ -631,18 +746,22 @@ class ButtonComponent : public Component {
 public:
     ButtonComponent(const std::string& text, std::function<void()> onClick)
         : m_text(text), m_onClick(onClick) {
-        if (!m_font.loadFromFile("path/to/your/font.ttf")) {
+        if (!m_font.loadFromFile("font.ttf")) {
             std::cout << "Error loading font" << std::endl;
         }
         m_sfText.setFont(m_font);
         m_sfText.setString(m_text);
-        m_sfText.setCharacterSize(24); // Default size
-        m_sfText.setFillColor(sf::Color::Black); // Default text color
+        m_sfText.setCharacterSize(24); 
+        m_sfText.setFillColor(sf::Color::Black); 
 
-        m_shape.setSize(sf::Vector2f(200, 50)); // Default button size
-        m_shape.setFillColor(sf::Color(200, 200, 200)); // Default button color
+        m_shape.setSize(sf::Vector2f(200, 50)); 
+        m_shape.setFillColor(sf::Color(200, 200, 200)); 
+    }
+    void setCharacterSize(unsigned int size) {
+        m_sfText.setCharacterSize(size);
     }
 
+  
     void setFont(const sf::Font& font) {
         m_sfText.setFont(font);
     }
@@ -695,16 +814,9 @@ private:
     std::function<void()> m_onClick;
 };
 
-enum class TextOrigin {
-    Center,
-    TopLeft,
-    // Add other origin options as needed
-};
-
-
 class PigComponent : public Component {
 public:
     PigComponent() {}
     virtual void update(float deltaTime) override {}
-    //this class is just to identify pigs easier to implement than tags for now
+    // This class is just to identify pigs easier to implement than tags for now
 };

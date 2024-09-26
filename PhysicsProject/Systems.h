@@ -19,6 +19,7 @@ const float PIXELS_PER_METER = 30.0f;
 class RenderSystem {
 public:
     void update(sf::RenderWindow& window);
+    void drawGameObject(sf::RenderWindow& window, GameObject* gameObject);
 };
 class PhysicsSystem {
 public:

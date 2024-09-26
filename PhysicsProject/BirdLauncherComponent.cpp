@@ -33,7 +33,6 @@ void BirdLauncherComponent::start() {
 }
 void BirdLauncherComponent::update(float deltaTime)  {
     if (!m_bird) {
-        std::cout << "m_bird is null in update()" << std::endl;
         return;
     }
     m_bird->getComponent<RigidBodyComponent>()->toggleGravity(false);
@@ -53,7 +52,6 @@ void BirdLauncherComponent::update(float deltaTime)  {
 }
 void BirdLauncherComponent::handleEvent(const sf::Event& event)  {
     if (!m_bird) {
-        std::cout << "m_bird is null in handleEvent()" << std::endl;
         return;
     }
 

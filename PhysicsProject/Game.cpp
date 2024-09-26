@@ -66,7 +66,7 @@ void Game::createScene(SceneType scene) {
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
          bird->addComponent<BoxColliderComponent>(1.0f,1.0f);
-         bird->addComponent<DoubleMassAbility>();
+         bird->addComponent<SplitAbility>();
   
         return  bird;
         };
@@ -165,41 +165,63 @@ void Game::createScene(SceneType scene) {
 
 
 void Game::update(float deltaTime) {
-    m_physicsSystem->update(deltaTime);
- 
-    checkGameOver();
-    auto& objects = GameObject::getAllObjects();
-    for (auto& gameObject : objects) {
-        gameObject->update(deltaTime);
-
-    }
-    objects.erase(std::remove_if(objects.begin(), objects.end(), [](GameObject* obj) {
-        if (obj->isDestroyed()) {
-            ComponentManager::getInstance().removeComponents(obj);
-            delete obj;
-            return true;
+    if (m_isLoseScreenActive) {
+        // Update only lose screen objects
+        if (m_loseTextObject) {
+            m_loseTextObject->update(deltaTime);
         }
-        return false;
-        }), objects.end());
-
-    if (m_bird) {
-        auto transform = m_bird->getComponent<TransformComponent>();
-        if (transform) {
-            transform->position.x += 1.0f * deltaTime;
+        if (m_retryButtonObject) {
+            m_retryButtonObject->update(deltaTime);
         }
     }
+    else {
+        // Normal game update
+        m_physicsSystem->update(deltaTime);
 
-    if (!m_isLoseScreenActive && !m_isGameCompleteScreenActive) {
-        checkLevelCompletion();
+        checkGameOver();
+
+        auto& objects = GameObject::getAllObjects();
+        for (auto& gameObject : objects) {
+            gameObject->update(deltaTime);
+        }
+
+        objects.erase(std::remove_if(objects.begin(), objects.end(), [](GameObject* obj) {
+            if (obj->isDestroyed()) {
+                ComponentManager::getInstance().removeComponents(obj);
+                delete obj;
+                return true;
+            }
+            return false;
+            }), objects.end());
+
+        if (m_bird) {
+            auto transform = m_bird->getComponent<TransformComponent>();
+            if (transform) {
+                transform->position.x += 1.0f * deltaTime;
+            }
+        }
+
+        if (!m_isLoseScreenActive && !m_isGameCompleteScreenActive) {
+            checkLevelCompletion();
+        }
     }
+
 }
 
 void Game::draw() {
     m_window.clear();
-    m_renderSystem->update(m_window);
+
+    if (m_isLoseScreenActive) {
+        // Only draw lose screen objects
+        if (m_loseTextObject) m_renderSystem->drawGameObject(m_window, m_loseTextObject);
+        if (m_retryButtonObject) m_renderSystem->drawGameObject(m_window, m_retryButtonObject);
+    }
+    else {
+        m_renderSystem->update(m_window);
+    }
+
     m_window.display();
 }
-
 void Game::handleInput() {
     sf::Event event;
     while (m_window.pollEvent(event)) {
@@ -229,17 +251,15 @@ void Game::handleInput() {
     }
 }
 void Game::showLoseScreen() {
-    m_isLoseScreenActive = true;
     createLoseScreen();
 }
-
 void Game::showGameCompleteScreen() {
     m_isGameCompleteScreenActive = true;
     createGameCompleteScreen();
 }
 
 void Game::retryLevel() {
-    m_isLoseScreenActive = false;
+    destroyLoseScreen();
     m_levelManager->retryCurrentLevel();
 }
 
@@ -272,22 +292,45 @@ void Game::initializeLevels() {
 
 
 void Game::createLoseScreen() {
-    // Clear existing objects
-    for (auto& object : GameObject::getAllObjects()) {
-        object->destroy();
+    m_isLoseScreenActive = true;
+
+    // Load font
+    if (!m_font.loadFromFile("font.ttf")) {
+        std::cout << "Error loading font" << std::endl;
+        return;
     }
 
     // Create "You Lose" text
-    auto loseText = GameObject::create(sf::Vector2f(400, 200), "loseText");
-    auto textRenderer = loseText->addComponent<TextRendererComponent>("You Lose!");
+    m_loseTextObject = GameObject::create(sf::Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50), "loseText");
+    auto textTransform = m_loseTextObject->addComponent<TransformComponent>(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50);
+    auto textRenderer = m_loseTextObject->addComponent<TextRendererComponent>("You Lose!");
+    textRenderer->setFont(m_font);
     textRenderer->setCharacterSize(48);
     textRenderer->setFillColor(sf::Color::Red);
+    textRenderer->setOrigin(TextOrigin::Center);
 
     // Create retry button
-    auto retryButton = GameObject::create(sf::Vector2f(400, 300), "retryButton");
-    auto buttonRenderer = retryButton->addComponent<ButtonComponent>("Retry", [this]() { this->retryLevel(); });
+    m_retryButtonObject = GameObject::create(sf::Vector2f(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 ), "retryButton");
+    auto buttonTransform = m_retryButtonObject->addComponent<TransformComponent>(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 +50);
+    auto buttonRenderer = m_retryButtonObject->addComponent<ButtonComponent>("Retry", [this]() { this->retryLevel(); });
+    buttonRenderer->setFont(m_font);
+    buttonRenderer->setCharacterSize(24);
+    buttonRenderer->setButtonColor(sf::Color(100, 100, 100));
+    buttonRenderer->setButtonColor(sf::Color(100, 100, 100));
+    buttonRenderer->setTextColor(sf::Color::White);
+    buttonRenderer->setButtonSize(sf::Vector2f(120, 40));
 }
-
+void Game::destroyLoseScreen() {
+    m_isLoseScreenActive = false;
+    if (m_loseTextObject) {
+        m_loseTextObject->destroy();
+        m_loseTextObject = nullptr;
+    }
+    if (m_retryButtonObject) {
+        m_retryButtonObject->destroy();
+        m_retryButtonObject = nullptr;
+    }
+}
 void Game::createGameCompleteScreen() {
     // Clear existing objects
     for (auto& object : GameObject::getAllObjects()) {
@@ -295,7 +338,7 @@ void Game::createGameCompleteScreen() {
     }
 
     // Create "Game Complete" text
-    auto completeText = GameObject::create(sf::Vector2f(400, 200), "completeText");
+    auto completeText = GameObject::create(sf::Vector2f(600, 1000), "completeText");
     auto textRenderer = completeText->addComponent<TextRendererComponent>("Game Complete!");
     textRenderer->setCharacterSize(48);
     textRenderer->setFillColor(sf::Color::Green);
@@ -307,7 +350,6 @@ void Game::checkGameOver() {
         if (object->getComponent<AbilityComponent>()) {
             hasBirds = true;
         }
-     
     }
 
   

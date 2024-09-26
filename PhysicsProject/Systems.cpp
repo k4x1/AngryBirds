@@ -8,39 +8,56 @@
 
 
 
+
 void RenderSystem::update(sf::RenderWindow& window) {
     for (auto& gameObject : GameObject::getAllObjects()) {
-        auto transform = gameObject->getComponent<TransformComponent>();
-        auto render = gameObject->getComponent<RenderComponent>();
-        if (transform && render) {
-            render->shape.setPosition(transform->position);
-            render->shape.setScale(transform->scale);
-            render->shape.setRotation(transform->rotation);
-            render->shape.setFillColor(render->color);
-            window.draw(render->shape);
-        }
+        drawGameObject(window, gameObject);
+    }
+}
 
-        auto spriteRenderer = gameObject->getComponent<SpriteRendererComponent>();
-        if (transform && spriteRenderer) {
-            spriteRenderer->updateTransformScale(transform->scale);
-            spriteRenderer->getSprite().setPosition(transform->position);
-            spriteRenderer->getSprite().setRotation(transform->rotation);
-            window.draw(spriteRenderer->getSprite());
-        }
-    
-        //draw collider, will upgrade to draw Icolliders at some point
-        auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
-        if (boxCollider) {
-            boxCollider->debugDraw(window);
-        }
-        auto circleCollider = gameObject->getComponent<CircleColliderComponent>();
-        if (circleCollider) {
-            circleCollider->debugDraw(window);
-        }
-        auto launcherRope = gameObject->getComponent<BirdLauncherComponent>();
-        if (launcherRope) {
-            launcherRope->drawRope(window);
-        }
+void RenderSystem::drawGameObject(sf::RenderWindow& window, GameObject* gameObject) {
+    auto transform = gameObject->getComponent<TransformComponent>();
+
+    auto render = gameObject->getComponent<RenderComponent>();
+    if (transform && render) {
+        render->shape.setPosition(transform->position);
+        render->shape.setScale(transform->scale);
+        render->shape.setRotation(transform->rotation);
+        render->shape.setFillColor(render->color);
+        window.draw(render->shape);
+    }
+
+    auto spriteRenderer = gameObject->getComponent<SpriteRendererComponent>();
+    if (transform && spriteRenderer) {
+        spriteRenderer->updateTransformScale(transform->scale);
+        spriteRenderer->getSprite().setPosition(transform->position);
+        spriteRenderer->getSprite().setRotation(transform->rotation);
+        window.draw(spriteRenderer->getSprite());
+    }
+
+    auto boxCollider = gameObject->getComponent<BoxColliderComponent>();
+    if (boxCollider) {
+        boxCollider->debugDraw(window);
+    }
+
+    auto circleCollider = gameObject->getComponent<CircleColliderComponent>();
+    if (circleCollider) {
+        circleCollider->debugDraw(window);
+    }
+
+    auto launcherRope = gameObject->getComponent<BirdLauncherComponent>();
+    if (launcherRope) {
+        launcherRope->drawRope(window);
+    }
+
+    auto textRenderer = gameObject->getComponent<TextRendererComponent>();
+    if (textRenderer) {
+        textRenderer->draw(window);
+    }
+
+    auto buttonComponent = gameObject->getComponent<ButtonComponent>();
+    if (buttonComponent) {
+        buttonComponent->draw(window);
     }
 }
 PhysicsSystem::PhysicsSystem() {
