@@ -35,7 +35,7 @@ void BirdLauncherComponent::update(float deltaTime)  {
     if (!m_bird) {
         return;
     }
-    m_bird->getComponent<RigidBodyComponent>()->toggleGravity(false);
+ 
  
     if (m_resetTimer->isRunning()) {
         m_resetTimer->update(deltaTime);
@@ -77,10 +77,10 @@ void BirdLauncherComponent::handleEvent(const sf::Event& event)  {
                     std::pow(transform->position.y - m_launchPosition.y, 2)
                 );
 
-                if (distance > 50.0f) { 
+            //    if (distance > 50.0f) { 
                     launchBird(sf::Vector2f(event.mouseButton.x, event.mouseButton.y));
                  
-                }
+              //  }
                 
             }
                  m_isDragging = false;
@@ -113,11 +113,19 @@ void BirdLauncherComponent::spawnBird() {
     // Initialize the RigidBodyComponent
     rigidBody->init();
 
+    // Reset bird's rotation and velocity
+    rigidBody->GetBody()->SetTransform(rigidBody->GetBody()->GetPosition(), 0);
+    rigidBody->GetBody()->SetLinearVelocity(b2Vec2(0, 0));
+    rigidBody->GetBody()->SetAngularVelocity(0);
+    m_bird->getComponent<RigidBodyComponent>()->toggleGravity(false);
+    rigidBody->toggleGravity(false);
+
     std::cout << "Calling createSlingJoint()..." << std::endl;
     createSlingJoint();
 
     std::cout << "BirdLauncherComponent::spawnBird() completed" << std::endl;
 }
+
 
 void BirdLauncherComponent::createSlingJoint() {
     if (!m_bird) {
@@ -169,15 +177,16 @@ void BirdLauncherComponent::createSlingJoint() {
         std::cout << "Sling joint created successfully." << std::endl;
     }
 }
-void BirdLauncherComponent::updateBirdPosition(const sf::Vector2f& mousePos) {
 
+void BirdLauncherComponent::updateBirdPosition(const sf::Vector2f& mousePos) {
     if (!m_bird) return;
 
     auto transform = m_bird->getComponent<TransformComponent>();
-    if (!transform) return;
+    auto rigidBody = m_bird->getComponent<RigidBodyComponent>();
+    if (!transform || !rigidBody || !rigidBody->GetBody()) return;
 
     // Calculate the direction from anchor to mouse
-    sf::Vector2f direction = m_anchorPosition - mousePos;
+    sf::Vector2f direction = mousePos - m_anchorPosition;
 
     // Limit the pull distance
     float currentDistance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
@@ -186,21 +195,20 @@ void BirdLauncherComponent::updateBirdPosition(const sf::Vector2f& mousePos) {
     }
 
     // Set the bird's position
-    transform->position = m_anchorPosition - direction;
+    sf::Vector2f newPosition = m_anchorPosition + direction;
+    transform->position = newPosition;
 
     // Update the physics body position
-    auto rigidBody = m_bird->getComponent<RigidBodyComponent>();
-    if (rigidBody && rigidBody->GetBody()) {
-        rigidBody->GetBody()->SetTransform(b2Vec2(transform->position.x / 30.0f, transform->position.y / 30.0f), rigidBody->GetBody()->GetAngle());
-    }
-
+    rigidBody->GetBody()->SetTransform(b2Vec2(newPosition.x / 30.0f, newPosition.y / 30.0f), rigidBody->GetBody()->GetAngle());
+    rigidBody->GetBody()->SetLinearVelocity(b2Vec2(0, 0));  // Reset velocity while dragging
 }
+
 void BirdLauncherComponent::launchBird(const sf::Vector2f& releasePos) {
     if (!m_bird) return;
 
     auto rigidBody = m_bird->getComponent<RigidBodyComponent>();
     if (!rigidBody) return;
-
+    rigidBody->toggleGravity(true);
     // Calculate launch vector
     sf::Vector2f launchVector = m_anchorPosition - releasePos;
     float launchForce = std::min(launchVector.x * launchVector.x + launchVector.y * launchVector.y, 100.0f); 

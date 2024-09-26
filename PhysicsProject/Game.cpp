@@ -60,14 +60,34 @@ void Game::createScene(SceneType scene) {
         "Sprites/dannyInRealLife"
     };
 
-    auto createBird = [&](const sf::Vector2f& position, const std::string& spritePath) {
+    auto createChick = [&](const sf::Vector2f& position, const std::string& spritePath) {
         auto bird = GameObject::create(position, "bird");
         bird->addComponent<TransformComponent>(position.x, position.y);
         bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
         bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
          bird->addComponent<BoxColliderComponent>(1.0f,1.0f);
-         bird->addComponent<SplitAbility>();
+         bird->addComponent<DoubleMassAbility>();
   
+        return  bird;
+        };    
+    auto createDuck = [&](const sf::Vector2f& position, const std::string& spritePath) {
+        auto bird = GameObject::create(position, "bird");
+        bird->addComponent<TransformComponent>(position.x, position.y);
+        bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
+        bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
+         bird->addComponent<BoxColliderComponent>(1.0f,1.0f);
+         bird->addComponent<BoostAbility>();
+  
+        return  bird;
+        };
+    auto createParrot = [&](const sf::Vector2f& position, const std::string& spritePath) {
+        auto bird = GameObject::create(position, "bird");
+        bird->addComponent<TransformComponent>(position.x, position.y);
+        bird->addComponent<SpriteRendererComponent>(spritePath + ".png");
+        bird->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
+        bird->addComponent<BoxColliderComponent>(1.0f, 1.0f);
+        bird->addComponent<SplitAbility>();
+
         return  bird;
         };
     auto createPig= [&](const sf::Vector2f& position, const std::string& spritePath  = "Sprites/dannyInRealLife") {
@@ -83,37 +103,37 @@ void Game::createScene(SceneType scene) {
 
         pig->addComponent<CircleColliderComponent>(1.0f, sf::Vector2f(30, 35));
 
-        pig->addComponent<BreakableComponent>(20);
+        pig->addComponent<BreakableComponent>(30);
 
         pig->addComponent<PigComponent>();
         std::cout << "Pig creation completed" << std::endl;
         return pig;
         };
-    auto createPlatform = [&](const sf::Vector2f& position, const sf::Vector2f& size, const sf::Color color) {
+    auto createPlatform = [&](const sf::Vector2f& position, const sf::Vector2f& size = sf::Vector2f(1,1)) {
         auto plat = GameObject::create(position, "platform");
         plat->addComponent<TransformComponent>(position.x, position.y);
         plat->getComponent<TransformComponent>()->setScale(size.x, size.y);
-        plat->addComponent<RenderComponent>(color);
-        plat->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 0.0f);
+        plat->addComponent<SpriteRendererComponent>("Sprites/ground.png");
+
+        plat->addComponent<RigidBodyComponent>(GetPhysicsWorld(), 1.0f, 1.0f);
         plat->addComponent<BoxColliderComponent>(size.x, size.y);
-        plat->addComponent<BreakableComponent>(20);
+        plat->addComponent<BreakableComponent>(30);
         return plat;
         };
 
-    auto createLauncher = [&](const float x, const float y, const std::function<GameObject* (const sf::Vector2f&, const std::string&)>& birdCreator) {
+    auto createLauncher = [&](const float x, const float y, const std::function<GameObject* (const sf::Vector2f&, const std::string&)>& birdCreator, const std::string& spritePath) {
         auto position = sf::Vector2f(x, y);
         auto launcher = GameObject::create(position, "launcher");
         launcher->addComponent<TransformComponent>(x, y);
         launcher->addComponent<RenderComponent>(sf::Color::Red);
-        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), position, birdCreator, spritePaths[2]);
+        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), position, birdCreator, spritePath);
         };
 
     switch (scene) {
     case SceneType::MAIN_MENU:
     {
       
-        createBird(sf::Vector2f(375, 275), spritePaths[0]);
-        createBird(sf::Vector2f(200, 200), spritePaths[1]);
+     
   
        auto danny =  createPig(sf::Vector2f(550, 350));
    
@@ -122,7 +142,17 @@ void Game::createScene(SceneType scene) {
     case SceneType::LEVEL_1:
     {
       
-        createLauncher(200, 500, createBird);
+        createLauncher(200, 450, createChick, spritePaths[0]);
+
+        createPlatform(sf::Vector2f(400, 550));
+        createPlatform(sf::Vector2f(400, 475));
+        createPlatform(sf::Vector2f(400, 425)); 
+        
+  
+
+
+
+        
 
         createPig(sf::Vector2f(633, 500));
    
@@ -130,14 +160,26 @@ void Game::createScene(SceneType scene) {
     break;
     case SceneType::LEVEL_2:
     {
-        createLauncher(200, 500, createBird);
-        createPig(sf::Vector2f(633, 500));
+        createLauncher(200, 500, createDuck, spritePaths[1]);
+        createPig(sf::Vector2f(700, 375));
+        createPlatform(sf::Vector2f(700, 550));
+        createPlatform(sf::Vector2f(700, 475));
+        createPlatform(sf::Vector2f(700, 425));
     }
     break;
     case SceneType::BOSS_FIGHT:
     {
-        createLauncher(200, 500, createBird);
-        createPig(sf::Vector2f(633, 500));
+        createLauncher(200, 500, createParrot, spritePaths[2]);
+        createPig(sf::Vector2f(550, 375));
+        createPlatform(sf::Vector2f(550, 550));
+        createPlatform(sf::Vector2f(550, 475));
+        createPlatform(sf::Vector2f(550, 425));
+
+        createPig(sf::Vector2f(625, 550));
+        createPig(sf::Vector2f(700, 375));
+        createPlatform(sf::Vector2f(700, 550));
+        createPlatform(sf::Vector2f(700, 475));
+        createPlatform(sf::Vector2f(700, 425));
     }
     break;
     }

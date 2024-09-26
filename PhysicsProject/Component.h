@@ -156,6 +156,7 @@ public:
 
     void updateTransformScale(const sf::Vector2f& transformScale) {
         m_desiredSize = sf::Vector2f(transformScale.x * 60, transformScale.y * 60); 
+
         updateScale();
     }
 
