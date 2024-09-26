@@ -100,14 +100,13 @@ void Game::createScene(SceneType scene) {
         return plat;
         };
 
-    auto createLauncher = [&](const float x, const float y) {
+    auto createLauncher = [&](const float x, const float y, const std::function<GameObject* (const sf::Vector2f&, const std::string&)>& birdCreator) {
         auto position = sf::Vector2f(x, y);
         auto launcher = GameObject::create(position, "launcher");
         launcher->addComponent<TransformComponent>(x, y);
         launcher->addComponent<RenderComponent>(sf::Color::Red);
-        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), position, createBird, spritePaths[2]);
+        launcher->addComponent<BirdLauncherComponent>(&m_window, GetPhysicsWorld(), position, birdCreator, spritePaths[2]);
         };
-
 
     switch (scene) {
     case SceneType::MAIN_MENU:
@@ -123,7 +122,7 @@ void Game::createScene(SceneType scene) {
     case SceneType::LEVEL_1:
     {
       
-        createLauncher(200, 500);
+        createLauncher(200, 500, createBird);
 
         createPig(sf::Vector2f(633, 500));
    
@@ -131,13 +130,13 @@ void Game::createScene(SceneType scene) {
     break;
     case SceneType::LEVEL_2:
     {
-        createLauncher(200, 500);
+        createLauncher(200, 500, createBird);
         createPig(sf::Vector2f(633, 500));
     }
     break;
     case SceneType::BOSS_FIGHT:
     {
-        createLauncher(200, 500);
+        createLauncher(200, 500, createBird);
         createPig(sf::Vector2f(633, 500));
     }
     break;
